@@ -36,6 +36,9 @@
         "ascApiKeyPath": "/home/frappe/.eas-credentials/AuthKey_Y2C623HU6R.p8",
         "ascApiKeyId": "Y2C623HU6R",
         "ascApiKeyIssuerId": "99ead4af-5aa1-4aaa-88a8-b1049bc519ba"
+      },
+      "android": {
+        "serviceAccountKeyPath": "/home/frappe/.eas-credentials/adat-504200-cb3c07e10463.json"
       }
     }
   }
