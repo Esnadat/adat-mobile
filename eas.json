@@ -1,0 +1,42 @@
+{
+  "cli": {
+    "version": ">= 18.8.1",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://portal.esnadat.sa"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "ios": {
+        "image": "latest"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://portal.esnadat.sa"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "ascApiKeyPath": "/home/frappe/.eas-credentials/AuthKey_Y2C623HU6R.p8",
+        "ascApiKeyId": "Y2C623HU6R",
+        "ascApiKeyIssuerId": "99ead4af-5aa1-4aaa-88a8-b1049bc519ba"
+      }
+    }
+  }
+}
