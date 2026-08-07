@@ -43,3 +43,10 @@ yarn-error.*
 # secrets / local
 .env
 .cursor/
+
+# credential files (never commit)
+google-services.json
+GoogleService-Info.plist
+*.keystore
+credentials.json
+AuthKey_*.p8
