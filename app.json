@@ -10,7 +10,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.saudalfredi.esnadatemployeemobile",
+      "bundleIdentifier": "com.adathr.adat",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },
@@ -62,7 +62,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.saudalfredi.esnadatemployeemobile",
+      "package": "com.adathr.adat",
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION"
