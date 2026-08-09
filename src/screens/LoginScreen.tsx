@@ -62,6 +62,7 @@ export function LoginScreen() {
   };
 
   const handleSendOtp = async () => {
+    if (loading) return;
     setError(null);
     if (!companyCode.trim() || !email.trim()) {
       setError(i18n.t("valCompanyEmail"));
@@ -79,6 +80,7 @@ export function LoginScreen() {
   };
 
   const handleVerify = async () => {
+    if (loading) return;
     setError(null);
     if (!otp.trim()) {
       setError(i18n.t("valOtp"));
