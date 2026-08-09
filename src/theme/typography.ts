@@ -1,4 +1,4 @@
-/** Shared typography scale for Esnadat employee app. */
+/** Shared typography scale for the adat employee app. */
 export const type = {
   screenTitle: { fontSize: 22, fontWeight: "800" as const, letterSpacing: -0.3, lineHeight: 28 },
   screenTitleCompact: { fontSize: 18, fontWeight: "800" as const, letterSpacing: -0.35, lineHeight: 24 },

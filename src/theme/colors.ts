@@ -1,19 +1,20 @@
-/** Esnadat employee app — premium black/white identity with restrained blue accents. */
+/** adat employee app — premium black/white/gray identity with a single green accent (#16A34A). */
 export const colors = {
   ink: "#121212",
   /** Deep neutral for shadows and high-contrast surfaces */
   navy: "#161616",
   text: "#1A1A1A",
-  /** Restrained accent: active controls and selected states only */
-  primary: "#1E5BB8",
+  /** adat brand accent (single green): active controls and selected states only */
+  primary: "#16A34A",
   /** Accent-dark for links/active labels */
-  primaryDark: "#17458C",
-  primaryLight: "#EDF3FD",
-  accentBlue: "#1E5BB8",
-  /** Semantic success — not primary brand */
-  success: "#0D8A4E",
-  successDark: "#09663A",
-  successLight: "#E5F5ED",
+  primaryDark: "#15803D",
+  primaryLight: "#DCFCE7",
+  /** Legacy alias — kept for existing imports; now the adat green (no blue accent). */
+  accentBlue: "#16A34A",
+  /** Semantic success — unified with the single adat green */
+  success: "#16A34A",
+  successDark: "#15803D",
+  successLight: "#DCFCE7",
   danger: "#C62828",
   dangerLight: "#FFEBEE",
   warning: "#D97706",
