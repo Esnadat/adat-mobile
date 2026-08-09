@@ -1,6 +1,10 @@
 import axios from "axios";
 import { AxiosError } from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { ENV } from "../config/env";
+
+/** Single source of truth for the API host (enables the adathr.com migration via env). */
+const API_ORIGIN = ENV.apiBaseUrl.replace(/\/+$/, "");
 
 let authToken: string | null = null;
 let portalSid: string | null = null;
@@ -16,11 +20,11 @@ export const setPortalSid = (sid: string | null) => {
 };
 
 export const http = axios.create({
-  baseURL: "https://portal.esnadat.sa",
+  baseURL: API_ORIGIN,
   withCredentials: true,
   headers: {
-    Origin: "https://portal.esnadat.sa",
-    Referer: "https://portal.esnadat.sa/",
+    Origin: API_ORIGIN,
+    Referer: `${API_ORIGIN}/`,
     "X-Requested-With": "esnadat-mobile",
   },
 });
