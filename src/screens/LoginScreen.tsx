@@ -22,7 +22,7 @@ import { ENV } from "../config/env";
 import { shadowCard } from "../theme/shadows";
 import { getApiErrorMessage } from "../services/http";
 
-const brandLogo = require("../../assets/branding/esnadat-mark.png");
+const brandLogo = require("../../assets/branding/adat-logo.png");
 
 function humanizeLoginError(error: unknown): string {
   if (error instanceof AxiosError) {
@@ -106,7 +106,7 @@ export function LoginScreen() {
       >
         <View style={styles.brandSection} key={`brand-${languageTick}`}>
           <Image source={brandLogo} style={styles.logo} resizeMode="contain" />
-          <Text style={styles.subtitle}>بوابة إسنادات للموظفين</Text>
+          <Text style={styles.subtitle}>{i18n.t("appSubtitle")}</Text>
         </View>
 
         <View style={styles.card}>
@@ -119,9 +119,9 @@ export function LoginScreen() {
                 value={companyCode}
                 onChangeText={setCompanyCode}
                 style={styles.input}
-                placeholder={isAr ? "مثال: COMP01" : "e.g. COMP01"}
+                placeholder={isAr ? "مثال: 1001" : "e.g. 1001"}
                 placeholderTextColor={colors.muted}
-                autoCapitalize="characters"
+                autoCapitalize="none"
                 returnKeyType="next"
               />
 
@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
     padding: 26,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: "rgba(0, 43, 102, 0.10)",
+    borderColor: "rgba(0, 0, 0, 0.08)",
     ...shadowCard,
   },
   formTitle: {
@@ -281,7 +281,7 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: colors.background,
     borderWidth: 1,
-    borderColor: "rgba(0, 43, 102, 0.15)",
+    borderColor: "rgba(0, 0, 0, 0.12)",
     borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: 13,

@@ -2,8 +2,8 @@ import { I18n } from "i18n-js";
 
 const i18n = new I18n({
   en: {
-    brandName: "Esnadat",
-    appSubtitle: "Employee Portal",
+    brandName: "adat",
+    appSubtitle: "adat Employee Portal",
     // Auth
     login: "Sign In",
     companyCode: "Company Code",
@@ -96,7 +96,7 @@ const i18n = new I18n({
     deleteAccountConfirmCta: "Request deletion",
     commonCancel: "Cancel",
     deleteAccountEmailSubject: "Account deletion request",
-    deleteAccountEmailBody: "I request deletion of my Esnadat Employee account and all associated personal data.",
+    deleteAccountEmailBody: "I request deletion of my adat account and all associated personal data.",
     languageLabel: "Language",
     appearanceLabel: "Appearance",
     appearanceLight: "Light",
@@ -312,8 +312,8 @@ const i18n = new I18n({
     errGeneric: "Something went wrong. Please try again.",
   },
   ar: {
-    brandName: "إسنادات",
-    appSubtitle: "بوابة إسنادات للموظفين",
+    brandName: "adat",
+    appSubtitle: "بوابة الموظف — adat",
     // Auth
     login: "تسجيل الدخول",
     companyCode: "رمز الشركة",
@@ -406,7 +406,7 @@ const i18n = new I18n({
     deleteAccountConfirmCta: "إرسال الطلب",
     commonCancel: "إلغاء",
     deleteAccountEmailSubject: "طلب حذف الحساب",
-    deleteAccountEmailBody: "أطلب حذف حسابي في تطبيق إسنادات للموظف وكل بياناتي الشخصية المرتبطة به.",
+    deleteAccountEmailBody: "أطلب حذف حسابي في تطبيق adat وكل بياناتي الشخصية المرتبطة به.",
     languageLabel: "اللغة",
     appearanceLabel: "المظهر",
     appearanceLight: "نهاري",
