@@ -22,9 +22,7 @@ interface VerifyOtpResponse {
   user?: UserSession;
 }
 
-const LOGIN_NO_SESSION_ERROR = "Login succeeded but session was not returned";
-
-/** Temporary: finds first non-empty string at key `sid`, depth max 5. Does not log values. */
+/** Best-effort: finds first non-empty string at key `sid`, depth max 5. Does not log values. */
 function findSidDeep(obj: unknown, depth = 5): string | null {
   if (depth < 0 || obj === null || obj === undefined) return null;
   if (typeof obj === "string") {
@@ -171,13 +169,16 @@ export const authService = {
 
     const sid = sidKnown || sidFromDataDeep || sidFromAxiosDeep || null;
 
-    if (!sid) {
-      throw new Error(LOGIN_NO_SESSION_ERROR);
+    // The BFF establishes the session as an httpOnly `portal_sid` cookie; the ERP
+    // sid is intentionally NOT exposed in the response body (security model). A 2xx
+    // response here means verification succeeded and the session cookie was set, so
+    // the native cookie jar (withCredentials) authorizes subsequent requests. Persist
+    // the sid only when present (belt-and-suspenders for the X-Portal-SID header);
+    // never fail login just because the body omits it.
+    if (sid) {
+      await AsyncStorage.setItem(PORTAL_SID_STORAGE, sid);
+      setPortalSid(sid);
     }
-
-    // Persist session id before optional /api/auth/me so the HTTP client sends X-Portal-SID.
-    await AsyncStorage.setItem(PORTAL_SID_STORAGE, sid);
-    setPortalSid(sid);
 
     const token =
       (typeof body?.token === "string" ? body.token : null) ||

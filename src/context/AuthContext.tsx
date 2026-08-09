@@ -48,16 +48,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await authService.sendOtp(payload);
       },
       verifyOtp: async (payload) => {
+        // A resolved verify (HTTP 2xx) means the session was created; the ERP sid
+        // lives in the httpOnly `portal_sid` cookie (not the body). Persist the sid
+        // only when the BFF exposes it; otherwise rely on the cookie for auth.
         const session = await authService.verifyOtp(payload);
 
-        await AsyncStorage.setItem(SID_KEY, session.sid);
-        setPortalSid(session.sid);
-        const hasSidAfterStore = Boolean(await AsyncStorage.getItem(SID_KEY));
-
-        if (!hasSidAfterStore) {
+        if (session.sid) {
+          await AsyncStorage.setItem(SID_KEY, session.sid);
+          setPortalSid(session.sid);
+        } else {
           await AsyncStorage.removeItem(SID_KEY);
           setPortalSid(null);
-          throw new Error("Login succeeded but session was not returned");
         }
 
         if (session.token) {
