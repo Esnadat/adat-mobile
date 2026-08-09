@@ -788,7 +788,7 @@ const styles = StyleSheet.create({
     minHeight: 40,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "rgba(0, 43, 102, 0.2)",
+    borderColor: "rgba(0, 0, 0, 0.14)",
     backgroundColor: colors.surface,
     alignItems: "center",
     justifyContent: "center",
@@ -865,7 +865,7 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: colors.background,
     borderWidth: 1,
-    borderColor: "rgba(0, 43, 102, 0.15)",
+    borderColor: "rgba(0, 0, 0, 0.12)",
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -943,7 +943,7 @@ const styles = StyleSheet.create({
   datePicker: {
     backgroundColor: colors.background,
     borderWidth: 1,
-    borderColor: "rgba(0, 43, 102, 0.15)",
+    borderColor: "rgba(0, 0, 0, 0.12)",
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 11,

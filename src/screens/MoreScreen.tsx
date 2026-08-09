@@ -27,7 +27,7 @@ export function MoreScreen({ onOpenPayroll, onOpenSettings, onOpenBusinessCard }
   const soonIcon = colors.textMuted;
 
   const align = isAr ? "right" : "left";
-  const brandCaption = isAr ? "حلول الموارد البشرية" : "Employee Portal";
+  const brandCaption = isAr ? "بوابة الموظف" : "Employee Portal";
 
   return (
     <ScreenShell
@@ -99,7 +99,7 @@ export function MoreScreen({ onOpenPayroll, onOpenSettings, onOpenBusinessCard }
 
         <View pointerEvents="none" style={styles.brandFooterCard}>
           <Image
-            source={require("../../assets/branding/esnadat-wordmark.png")}
+            source={require("../../assets/branding/adat-logo.png")}
             style={styles.brandFooterWordmark}
             resizeMode="contain"
           />

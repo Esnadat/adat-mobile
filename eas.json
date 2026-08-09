@@ -26,7 +26,8 @@
         "image": "latest"
       },
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://portal.esnadat.sa"
+        "EXPO_PUBLIC_API_BASE_URL": "https://portal.esnadat.sa",
+        "EXPO_PUBLIC_SUPPORT_EMAIL": "support@adathr.com"
       }
     }
   },

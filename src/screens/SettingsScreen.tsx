@@ -59,8 +59,13 @@ export function SettingsScreen() {
           <View style={[styles.appearanceChip, styles.appearanceChipActive]}>
             <Text style={styles.appearanceChipText}>{i18n.t("appearanceLight")}</Text>
           </View>
-          <View style={styles.appearanceChip}>
-            <Text style={styles.appearanceChipText}>{i18n.t("appearanceDark")}</Text>
+          <View style={[styles.appearanceChip, styles.appearanceChipDisabled]}>
+            <Text style={[styles.appearanceChipText, styles.appearanceChipTextDisabled]}>
+              {i18n.t("appearanceDark")}
+            </Text>
+            <View style={styles.soonBadge}>
+              <Text style={styles.soonBadgeText}>{isAr ? "قريباً" : "Soon"}</Text>
+            </View>
           </View>
         </View>
         <Text style={[styles.appearanceHint, isAr && styles.textRtl]}>{i18n.t("appearanceComingSoon")}</Text>
@@ -155,10 +160,31 @@ const styles = StyleSheet.create({
     borderColor: colors.success,
     backgroundColor: colors.successLight,
   },
+  appearanceChipDisabled: {
+    opacity: 0.55,
+    flexDirection: "row",
+    gap: 6,
+  },
   appearanceChipText: {
     fontSize: 13,
     fontWeight: "700",
     color: colors.ink,
+  },
+  appearanceChipTextDisabled: {
+    color: colors.textMuted,
+  },
+  soonBadge: {
+    borderRadius: 999,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    backgroundColor: colors.surfaceElevated,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  soonBadgeText: {
+    fontSize: 9,
+    fontWeight: "800",
+    color: colors.textMuted,
   },
   appearanceHint: {
     marginTop: 8,
