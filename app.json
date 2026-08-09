@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Esnadat Employee",
+    "name": "adat",
     "slug": "esnadat-employee-mobile",
     "scheme": "esnadat",
     "version": "1.0.0",
@@ -76,14 +76,14 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Allow Esnadat Employee to use your location for attendance check-in and check-out.",
+          "locationWhenInUsePermission": "Allow adat to use your location for attendance check-in and check-out.",
           "isAndroidBackgroundLocationEnabled": false
         }
       ],
       [
         "expo-splash-screen",
         {
-          "image": "./assets/branding/esnadat-mark.png",
+          "image": "./assets/branding/adat-logo.png",
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
