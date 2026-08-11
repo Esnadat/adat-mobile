@@ -1,4 +1,10 @@
 import { CreateRequestPayload, EmployeeRequest, LeaveBalanceCheckResult, RequestStatus, RequestType } from "../types/api";
+import { IDEMPOTENCY_HEADER } from "../utils/idempotency";
+
+/** Build an axios config that carries the idempotency header, when a key is provided. */
+function idempotencyConfig(opts?: { idempotencyKey?: string }) {
+  return opts?.idempotencyKey ? { headers: { [IDEMPOTENCY_HEADER]: opts.idempotencyKey } } : undefined;
+}
 import { AxiosError } from "axios";
 import { http } from "./http";
 
@@ -189,10 +195,11 @@ function normalizeSupportTicketRow(raw: RawRow): EmployeeRequest | null {
 
 export const requestService = {
   // Mobile app reuses existing portal-api request creation contracts from web services.
-  async createRequest(payload: CreateRequestPayload) {
+  async createRequest(payload: CreateRequestPayload, opts?: { idempotencyKey?: string }) {
     if (payload.type !== "leave" && payload.type !== "permission" && payload.type !== "support") {
       throw new Error("Unsupported request type for mobile submission");
     }
+    const cfg = idempotencyConfig(opts);
 
     if (payload.type === "leave") {
       const url = "/api/resource/Leave Application";
@@ -216,7 +223,7 @@ export const requestService = {
         });
       }
       try {
-        const response = await http.post(url, body);
+        const response = await http.post(url, body, cfg);
         logRequestSuccess(url, response.status);
         return response;
       } catch (error) {
@@ -235,7 +242,7 @@ export const requestService = {
       };
       logRequestStart(url, body);
       try {
-        const response = await http.post(url, body);
+        const response = await http.post(url, body, cfg);
         logRequestSuccess(url, response.status);
         return response;
       } catch (error) {
@@ -244,20 +251,26 @@ export const requestService = {
       }
     }
 
-    return this.createSupportTicket({
-      title: String(payload.subject ?? "").trim(),
-      description: String(payload.description ?? "").trim(),
-      category: String(payload.category ?? "").trim(),
-      priority: String(payload.priority ?? "").trim(),
-    });
+    return this.createSupportTicket(
+      {
+        title: String(payload.subject ?? "").trim(),
+        description: String(payload.description ?? "").trim(),
+        category: String(payload.category ?? "").trim(),
+        priority: String(payload.priority ?? "").trim(),
+      },
+      opts
+    );
   },
 
-  async createSupportTicket(payload: {
-    title: string;
-    description: string;
-    category: string;
-    priority: string;
-  }) {
+  async createSupportTicket(
+    payload: {
+      title: string;
+      description: string;
+      category: string;
+      priority: string;
+    },
+    opts?: { idempotencyKey?: string }
+  ) {
     const url = "/api/support/tickets";
     const body = {
       title: payload.title.trim(),
@@ -267,7 +280,7 @@ export const requestService = {
     };
     logRequestStart(url, body);
     try {
-      const response = await http.post(url, body);
+      const response = await http.post(url, body, idempotencyConfig(opts));
       logRequestSuccess(url, response.status);
       return response;
     } catch (error) {

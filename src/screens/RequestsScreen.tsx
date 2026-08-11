@@ -1,5 +1,5 @@
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { LargeButton } from "../components/LargeButton";
 import { RequestSelectField, type RequestSelectOption } from "../components/requests/RequestSelectField";
@@ -10,6 +10,7 @@ import { useAppLocale } from "../i18n/LocaleContext";
 import { i18n } from "../i18n";
 import { getApiErrorMessage } from "../services/http";
 import { requestService } from "../services/requestService";
+import { newIdempotencyKey } from "../utils/idempotency";
 import { colors } from "../theme/colors";
 import { floatingTabBarBottomInset, shadowCard } from "../theme/shadows";
 import { type as typeStyles } from "../theme/typography";
@@ -81,6 +82,10 @@ export function RequestsScreen({ onViewMyRequests }: RequestsScreenProps = {}) {
   const [loading, setLoading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submittedName, setSubmittedName] = useState<string | null>(null);
+  // Stable idempotency key for the current submission attempt: generated on first
+  // submit, reused across retries (so a network-lost retry is deduped by the BFF),
+  // cleared on success and on form reset so a new submission gets a fresh key.
+  const idempotencyKeyRef = useRef<string | null>(null);
 
   const [androidField, setAndroidField] = useState<PickerField>(null);
   const [iosPicker, setIosPicker] = useState<{ field: Exclude<PickerField, null>; draft: Date } | null>(null);
@@ -152,6 +157,7 @@ export function RequestsScreen({ onViewMyRequests }: RequestsScreenProps = {}) {
     setSubmitError(null);
     setSubmittedName(null);
     setFlowTab("new");
+    idempotencyKeyRef.current = null;
   };
 
   const loadLeaveTypes = async () => {
@@ -293,36 +299,49 @@ export function RequestsScreen({ onViewMyRequests }: RequestsScreenProps = {}) {
     }
 
     setLoading(true);
+    const idempotencyKey =
+      idempotencyKeyRef.current ?? (idempotencyKeyRef.current = newIdempotencyKey());
     try {
       if (type === "leave" && fromDate && toDate) {
-        const res = await requestService.createRequest({
-          type: "leave",
-          reason: reason.trim(),
-          leaveType: leaveType.trim(),
-          fromDate: formatApiDate(fromDate),
-          toDate: formatApiDate(toDate),
-        });
+        const res = await requestService.createRequest(
+          {
+            type: "leave",
+            reason: reason.trim(),
+            leaveType: leaveType.trim(),
+            fromDate: formatApiDate(fromDate),
+            toDate: formatApiDate(toDate),
+          },
+          { idempotencyKey }
+        );
         const resData = res?.data as { data?: { name?: string } } | undefined;
         setSubmittedName(resData?.data?.name ?? "");
       } else if (type === "permission" && permissionDate) {
-        await requestService.createRequest({
-          type: "permission",
-          reason: reason.trim(),
-          permissionDate: formatApiDate(permissionDate),
-          startTime: startTime.trim() || undefined,
-          endTime: endTime.trim() || undefined,
-        });
+        await requestService.createRequest(
+          {
+            type: "permission",
+            reason: reason.trim(),
+            permissionDate: formatApiDate(permissionDate),
+            startTime: startTime.trim() || undefined,
+            endTime: endTime.trim() || undefined,
+          },
+          { idempotencyKey }
+        );
         setSubmittedName("");
       } else if (type === "support") {
-        const res = await requestService.createSupportTicket({
-          title: supportSubject.trim(),
-          description: supportDescription.trim(),
-          category: supportCategory.trim(),
-          priority: supportPriority.trim(),
-        });
+        const res = await requestService.createSupportTicket(
+          {
+            title: supportSubject.trim(),
+            description: supportDescription.trim(),
+            category: supportCategory.trim(),
+            priority: supportPriority.trim(),
+          },
+          { idempotencyKey }
+        );
         const data = res?.data as { data?: { id?: string; name?: string } } | undefined;
         setSubmittedName(data?.data?.id || data?.data?.name || "");
       }
+      // Submission succeeded — drop the key so the next request gets a fresh one.
+      idempotencyKeyRef.current = null;
     } catch (error) {
       if (type === "support") {
         setSubmitError(i18n.t("supportSubmitError"));
