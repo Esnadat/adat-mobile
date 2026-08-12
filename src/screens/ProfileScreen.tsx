@@ -154,8 +154,9 @@ export function ProfileScreen() {
     <ScreenShell
       key={locale}
       title={i18n.t("profileTab")}
+      hideHeader
       headerDensity="compact"
-      contentContainerStyle={{ paddingTop: 4, paddingBottom: floatingTabBarBottomInset + 10 }}
+      contentContainerStyle={{ paddingTop: 14, paddingBottom: floatingTabBarBottomInset + 10 }}
     >
       <PremiumCard hero style={styles.businessCard}>
         <View style={styles.cardAccent} />
