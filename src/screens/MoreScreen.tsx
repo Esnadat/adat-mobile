@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Ionicons } from "../components/ui/NavIcons";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { ActionTile } from "../components/ui/ActionTile";
@@ -8,6 +8,7 @@ import { useAuth } from "../context/AuthContext";
 import { i18n } from "../i18n";
 import { colors } from "../theme/colors";
 import { floatingTabBarBottomInset, shadowSoft } from "../theme/shadows";
+import { teamService } from "../services/teamService";
 
 const TILE_ICON = 26;
 const SIGNOUT_ICON = 22;
@@ -16,15 +17,42 @@ export type MoreScreenProps = {
   onOpenPayroll: () => void;
   onOpenSettings: () => void;
   onOpenBusinessCard: () => void;
+  onOpenNotifications: () => void;
+  onOpenBalances: () => void;
+  onOpenTeam: () => void;
 };
 
-export function MoreScreen({ onOpenPayroll, onOpenSettings, onOpenBusinessCard }: MoreScreenProps) {
+export function MoreScreen({
+  onOpenPayroll,
+  onOpenSettings,
+  onOpenBusinessCard,
+  onOpenNotifications,
+  onOpenBalances,
+  onOpenTeam,
+}: MoreScreenProps) {
   const { logout } = useAuth();
   const logoutInFlightRef = useRef(false);
   const { locale } = useAppLocale();
   const isAr = locale === "ar";
   const stroke = colors.ink;
   const soonIcon = colors.textMuted;
+
+  // Managers (users with direct reports) see the "My Team" tile; others don't.
+  const [isManager, setIsManager] = useState(false);
+  useEffect(() => {
+    let active = true;
+    teamService
+      .getTeamMembers()
+      .then((rows) => {
+        if (active) setIsManager(rows.length > 0);
+      })
+      .catch(() => {
+        if (active) setIsManager(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const align = isAr ? "right" : "left";
   const brandCaption = isAr ? "بوابة الموظف" : "Employee Portal";
@@ -69,6 +97,38 @@ export function MoreScreen({ onOpenPayroll, onOpenSettings, onOpenBusinessCard }
             onPress={onOpenSettings}
             showChevron
           />
+          <ActionTile
+            style={styles.tile}
+            variant="vertical"
+            visualTone="active"
+            icon={<Ionicons name="notifications-outline" size={TILE_ICON} color={stroke} />}
+            title={isAr ? "التنبيهات" : "Notifications"}
+            subtitle={isAr ? "آخر التحديثات المتعلقة بك" : "Updates relevant to you"}
+            onPress={onOpenNotifications}
+            showChevron
+          />
+          <ActionTile
+            style={styles.tile}
+            variant="vertical"
+            visualTone="active"
+            icon={<Ionicons name="albums-outline" size={TILE_ICON} color={stroke} />}
+            title={isAr ? "أرصدتي" : "My Balances"}
+            subtitle={isAr ? "أرصدة الإجازات المتاحة" : "Available leave balances"}
+            onPress={onOpenBalances}
+            showChevron
+          />
+          {isManager ? (
+            <ActionTile
+              style={styles.tile}
+              variant="vertical"
+              visualTone="active"
+              icon={<Ionicons name="people-outline" size={TILE_ICON} color={stroke} />}
+              title={isAr ? "فريقي" : "My Team"}
+              subtitle={isAr ? "التابعون المباشرون وحضورهم" : "Direct reports & attendance"}
+              onPress={onOpenTeam}
+              showChevron
+            />
+          ) : null}
         </View>
 
         <Text style={[styles.hubSectionTitle, styles.hubSectionSpaced, { textAlign: align }]}>

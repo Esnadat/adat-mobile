@@ -176,26 +176,6 @@ export function ProfileScreen() {
                 {displayDesignation}
               </Text>
             ) : null}
-            {displayEmail ? (
-              <Text style={[styles.heroEmail, isAr && styles.noTrack, { textAlign: align }]} numberOfLines={1}>
-                {displayEmail}
-              </Text>
-            ) : null}
-            {displayMobile ? (
-              <Text style={[styles.heroPhone, isAr && styles.noTrack, { textAlign: align }]} numberOfLines={1}>
-                {displayMobile}
-              </Text>
-            ) : null}
-            {displayDepartment ? (
-              <Text style={[styles.heroMeta, { textAlign: align }]} numberOfLines={1}>
-                {displayDepartment}
-              </Text>
-            ) : null}
-            {displayManager ? (
-              <Text style={[styles.heroMeta, { textAlign: align }]} numberOfLines={1}>
-                {isAr ? `المدير: ${displayManager}` : `Manager: ${displayManager}`}
-              </Text>
-            ) : null}
           </View>
         </View>
         <View style={[styles.metaRow, isAr ? styles.rowReverse : styles.rowNormal]}>

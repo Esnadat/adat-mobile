@@ -19,6 +19,17 @@ export const setPortalSid = (sid: string | null) => {
   portalSid = sid;
 };
 
+/**
+ * Registered by AuthContext. Called when an authenticated request returns 401
+ * (session expired/invalid) so the app can clear local login state and route to
+ * the sign-in screen instead of showing a broken logged-in UI. OTP login calls
+ * are excluded (their 401s are login errors, not session expiry).
+ */
+let onUnauthorized: (() => void) | null = null;
+export const setUnauthorizedHandler = (fn: (() => void) | null) => {
+  onUnauthorized = fn;
+};
+
 export const http = axios.create({
   baseURL: API_ORIGIN,
   withCredentials: true,
@@ -78,6 +89,21 @@ http.interceptors.response.use(
     const method = error.config?.method;
     const isOptionalUserEnrichment404 =
       status === 404 && (url.includes("/api/auth/me") || url.includes("/api/employee/me"));
+
+    const isOtpAuthCall =
+      url.includes("/api/auth/request-otp") ||
+      url.includes("/api/auth/verify-otp") ||
+      url.includes("/api/auth/send-code") ||
+      url.includes("/api/auth/request-code") ||
+      url.includes("/api/auth/verify");
+    if (status === 401 && !isOtpAuthCall) {
+      // Session expired/invalid on an authenticated request → let AuthContext sign out.
+      try {
+        onUnauthorized?.();
+      } catch {
+        /* ignore */
+      }
+    }
 
     if (__DEV__) {
       if (isOptionalUserEnrichment404) {

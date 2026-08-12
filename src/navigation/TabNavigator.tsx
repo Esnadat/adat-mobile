@@ -16,6 +16,9 @@ import { ProfileScreen } from "../screens/ProfileScreen";
 import { RequestsHubScreen } from "../screens/RequestsHubScreen";
 import { SettingsScreen } from "../screens/SettingsScreen";
 import { BusinessCardScreen } from "../screens/BusinessCardScreen";
+import { NotificationsScreen } from "../screens/NotificationsScreen";
+import { MyBalancesScreen } from "../screens/MyBalancesScreen";
+import { MyTeamScreen } from "../screens/MyTeamScreen";
 import { useAppLocale } from "../i18n/LocaleContext";
 import { i18n } from "../i18n";
 import { colors } from "../theme/colors";
@@ -108,7 +111,19 @@ export function TabNavigator() {
                     ? locale === "ar"
                       ? "بطاقة العمل"
                       : "Business Card"
-                    : i18n.t("settingsTitle")}
+                    : moreStackView === "notifications"
+                      ? locale === "ar"
+                        ? "التنبيهات"
+                        : "Notifications"
+                      : moreStackView === "balances"
+                        ? locale === "ar"
+                          ? "أرصدتي"
+                          : "My Balances"
+                        : moreStackView === "team"
+                          ? locale === "ar"
+                            ? "فريقي"
+                            : "My Team"
+                          : i18n.t("settingsTitle")}
               </Text>
               <View style={styles.headerSide} />
             </View>
@@ -137,6 +152,18 @@ export function TabNavigator() {
             <View style={styles.screen}>
               <SettingsScreen />
             </View>
+          ) : moreStackView === "notifications" ? (
+            <View style={styles.screen}>
+              <NotificationsScreen />
+            </View>
+          ) : moreStackView === "balances" ? (
+            <View style={styles.screen}>
+              <MyBalancesScreen />
+            </View>
+          ) : moreStackView === "team" ? (
+            <View style={styles.screen}>
+              <MyTeamScreen />
+            </View>
           ) : (
             <>
               <View style={[styles.screen, { display: activeTab === "profile" ? "flex" : "none" }]}>
@@ -161,6 +188,9 @@ export function TabNavigator() {
                   onOpenPayroll={() => setMoreStackView("payroll")}
                   onOpenSettings={() => setMoreStackView("settings")}
                   onOpenBusinessCard={() => setMoreStackView("businessCard")}
+                  onOpenNotifications={() => setMoreStackView("notifications")}
+                  onOpenBalances={() => setMoreStackView("balances")}
+                  onOpenTeam={() => setMoreStackView("team")}
                 />
               </View>
             </>
