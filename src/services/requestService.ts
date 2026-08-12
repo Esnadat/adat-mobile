@@ -331,6 +331,23 @@ export const requestService = {
     }
   },
 
+  /**
+   * Cancel (withdraw) the current user's own pending request.
+   * Endpoint: POST /api/requests/:id/cancel  body: { type }
+   * The BFF enforces company scope, ownership (must be the applicant) and pending-only,
+   * then withdraws the draft. Non-pending / not-owned requests are rejected server-side.
+   */
+  async cancelRequest(id: string, type: RequestType): Promise<void> {
+    const url = `/api/requests/${encodeURIComponent(id)}/cancel`;
+    try {
+      const response = await http.post(url, { type });
+      logRequestSuccess(url, response.status);
+    } catch (error) {
+      logRequestFailure(url, error);
+      throw error;
+    }
+  },
+
   async getMySupportTickets(): Promise<EmployeeRequest[]> {
     const url = "/api/support/tickets";
     try {

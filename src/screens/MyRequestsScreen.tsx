@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { EmptyPanel } from "../components/ui/EmptyPanel";
 import { PremiumCard } from "../components/ui/PremiumCard";
 import { StatusPill } from "../components/ui/StatusPill";
@@ -157,7 +157,26 @@ function filterLabel(filter: RequestsFilter): string {
   return i18n.t("support");
 }
 
-function RequestCard({ item, isAr }: { item: EmployeeRequest; isAr: boolean }) {
+/**
+ * Whether a request can be cancelled from the app. Backend cancel endpoint
+ * (POST /api/requests/:id/cancel) covers pending Leave Applications and
+ * Permission Requests only.
+ */
+function canCancelRequest(item: EmployeeRequest): boolean {
+  return item.status === "pending" && (item.type === "leave" || item.type === "permission");
+}
+
+function RequestCard({
+  item,
+  isAr,
+  onCancel,
+  busy,
+}: {
+  item: EmployeeRequest;
+  isAr: boolean;
+  onCancel: (item: EmployeeRequest) => void;
+  busy: boolean;
+}) {
   const textAlign = isAr ? "right" : "left";
   const dateLabel = buildDateLabel(item);
   const cardAccent =
@@ -204,6 +223,22 @@ function RequestCard({ item, isAr }: { item: EmployeeRequest; isAr: boolean }) {
       {item.id ? (
         <Text style={[styles.cardId, { textAlign }]}>{`${i18n.t("requestId")}  ${item.id}`}</Text>
       ) : null}
+      {canCancelRequest(item) ? (
+        <View style={[styles.cardActions, isAr && styles.rowReverse]}>
+          <Pressable
+            accessibilityRole="button"
+            disabled={busy}
+            onPress={() => onCancel(item)}
+            style={({ pressed }) => [styles.cancelBtn, pressed && styles.cancelBtnPressed, busy && styles.cancelBtnDisabled]}
+          >
+            {busy ? (
+              <ActivityIndicator size="small" color={colors.danger} />
+            ) : (
+              <Text style={styles.cancelBtnText}>{i18n.t("cancelRequest")}</Text>
+            )}
+          </Pressable>
+        </View>
+      ) : null}
     </PremiumCard>
   );
 }
@@ -233,6 +268,7 @@ export function MyRequestsScreen({ focused = true }: { focused?: boolean }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<RequestsFilter>("all");
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -260,6 +296,32 @@ export function MyRequestsScreen({ focused = true }: { focused?: boolean }) {
   useEffect(() => {
     if (focused) void load();
   }, [focused, load]);
+
+  const handleCancel = useCallback(
+    (item: EmployeeRequest) => {
+      Alert.alert(i18n.t("cancelRequestConfirmTitle"), i18n.t("cancelRequestConfirmBody"), [
+        { text: i18n.t("cancelRequestConfirmNo"), style: "cancel" },
+        {
+          text: i18n.t("cancelRequestConfirmYes"),
+          style: "destructive",
+          onPress: () => {
+            setCancellingId(item.id);
+            requestService
+              .cancelRequest(item.id, item.type)
+              .then(() => {
+                Alert.alert(i18n.t("cancelRequestSuccess"));
+                return load();
+              })
+              .catch(() => {
+                Alert.alert(i18n.t("cancelRequestError"));
+              })
+              .finally(() => setCancellingId(null));
+          },
+        },
+      ]);
+    },
+    [load]
+  );
 
   const filteredRequests = useMemo(() => {
     if (activeFilter === "all") return requests;
@@ -303,7 +365,9 @@ export function MyRequestsScreen({ focused = true }: { focused?: boolean }) {
         refreshControl={
           <RefreshControl refreshing={loading} onRefresh={() => void load()} tintColor={colors.primary} colors={[colors.primary]} />
         }
-        renderItem={({ item }) => <RequestCard item={item} isAr={isAr} />}
+        renderItem={({ item }) => (
+          <RequestCard item={item} isAr={isAr} onCancel={handleCancel} busy={cancellingId === item.id} />
+        )}
         ListEmptyComponent={loading ? null : <EmptyState filtered={activeFilter !== "all"} />}
         showsVerticalScrollIndicator={false}
       />
@@ -405,6 +469,29 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     fontVariant: ["tabular-nums"],
   },
+  cardActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.divider,
+  },
+  cancelBtn: {
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.danger,
+    backgroundColor: colors.dangerLight,
+    paddingHorizontal: 18,
+    paddingVertical: 9,
+    minHeight: 38,
+    minWidth: 120,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cancelBtnPressed: { opacity: 0.85 },
+  cancelBtnDisabled: { opacity: 0.6 },
+  cancelBtnText: { fontSize: 13, fontWeight: "800", color: colors.danger, letterSpacing: -0.1 },
   typeChip: { borderRadius: 12, paddingHorizontal: 12, paddingVertical: 6 },
   typeLeave: { backgroundColor: colors.primaryLight, borderWidth: 1, borderColor: colors.primary },
   typePermission: { backgroundColor: colors.surfaceSubtle, borderWidth: 1, borderColor: "rgba(0, 0, 0, 0.12)" },
