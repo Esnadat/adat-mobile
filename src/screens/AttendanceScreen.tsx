@@ -503,7 +503,6 @@ export function AttendanceScreen({
       <HomeAnnouncements items={announcements} loading={announcementsLoading} isAr={isAr} />
 
       <View style={styles.feedWrap}>
-        <Text style={[styles.feedHeading, { textAlign: isAr ? "right" : "left" }]}>{i18n.t("todayStatus")}</Text>
         <HomeTodaySections isAr={isAr} taskRows={taskRows} tasksLoading={openTasksLoading} />
       </View>
     </ScreenShell>

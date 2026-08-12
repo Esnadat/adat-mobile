@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { authService } from "../services/authService";
-import { setAuthToken, setPortalSid } from "../services/http";
+import { setAuthToken, setPortalSid, setUnauthorizedHandler } from "../services/http";
 import { LoginOtpPayload, UserSession, VerifyOtpPayload } from "../types/api";
 
 const TOKEN_KEY = "auth_token";
@@ -21,6 +21,24 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserSession | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Mirror the user in a ref so the (stable) 401 handler can tell whether we are
+  // actually logged in — avoids a logout being triggered by 401s during login.
+  const userRef = useRef<UserSession | null>(null);
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
+
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      if (!userRef.current) return;
+      setUser(null);
+      setAuthToken(null);
+      setPortalSid(null);
+      void AsyncStorage.multiRemove([TOKEN_KEY, SID_KEY, USER_KEY]);
+    });
+    return () => setUnauthorizedHandler(null);
+  }, []);
 
   useEffect(() => {
     const restoreSession = async () => {

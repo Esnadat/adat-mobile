@@ -441,10 +441,6 @@ export function RequestsScreen({ onViewMyRequests }: RequestsScreenProps = {}) {
       >
         {segmentedControl}
 
-        <View style={[styles.sectionLabelRow, isAr && styles.rowReverse]}>
-          <SectionIcon name="document-text-outline" />
-          <Text style={[styles.sectionTitle, styles.sectionTitleInline, isAr && styles.textRtl]}>{i18n.t("chooseRequestType")}</Text>
-        </View>
         <View style={[styles.activeTypeRow, isAr && styles.rowReverse]}>
           {ACTIVE_REQUEST_TYPES.map((requestType) => {
             const selected = type === requestType;
