@@ -103,16 +103,6 @@ export function MoreScreen({
             style={styles.tile}
             variant="vertical"
             visualTone="active"
-            icon={<Ionicons name="notifications-outline" size={TILE_ICON} color={stroke} />}
-            title={isAr ? "التنبيهات" : "Notifications"}
-            subtitle={isAr ? "آخر التحديثات المتعلقة بك" : "Updates relevant to you"}
-            onPress={onOpenNotifications}
-            showChevron
-          />
-          <ActionTile
-            style={styles.tile}
-            variant="vertical"
-            visualTone="active"
             icon={<Ionicons name="albums-outline" size={TILE_ICON} color={stroke} />}
             title={isAr ? "أرصدتي" : "My Balances"}
             subtitle={isAr ? "أرصدة الإجازات المتاحة" : "Available leave balances"}

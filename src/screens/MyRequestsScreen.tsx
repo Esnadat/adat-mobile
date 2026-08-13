@@ -18,13 +18,23 @@ type RequestsFilter = "all" | "pending" | "approved" | "rejected" | "support";
 function statusTone(status: RequestStatus): StatusPillTone {
   if (status === "approved") return "success";
   if (status === "rejected") return "danger";
+  if (status === "cancelled") return "neutral";
   return "warning";
 }
 
 function statusLabel(status: RequestStatus): string {
   if (status === "approved") return i18n.t("requestStatusApproved");
   if (status === "rejected") return i18n.t("requestStatusRejected");
+  if (status === "cancelled") return i18n.t("requestStatusCancelled");
   return i18n.t("requestStatusPending");
+}
+
+/** Side-accent color reflects the request STATUS (not its type). */
+function statusAccentColor(status: RequestStatus): string {
+  if (status === "approved") return colors.success;
+  if (status === "rejected") return colors.danger;
+  if (status === "cancelled") return colors.textMuted;
+  return colors.warning;
 }
 
 function TypeChip({ type }: { type: RequestType | string }) {
@@ -179,28 +189,13 @@ function RequestCard({
 }) {
   const textAlign = isAr ? "right" : "left";
   const dateLabel = buildDateLabel(item);
-  const cardAccent =
-    item.type === "leave"
-      ? styles.cardLeave
-      : item.type === "permission"
-      ? styles.cardPermission
-      : item.type === "support"
-      ? styles.cardSupport
-      : item.type === "missed_punch"
-      ? styles.cardMissedPunch
-      : item.type === "attendance_adjustment"
-      ? styles.cardAttendanceAdj
-      : item.type === "overtime"
-      ? styles.cardOvertime
-      : item.type === "device_change"
-      ? styles.cardDeviceChange
-      : styles.cardSupport;
+  const accentColor = statusAccentColor(item.status);
 
   const title = item.type === "support" ? item.subject || i18n.t("support") : dateLabel;
   const meta = item.type === "support" ? dateLabel : null;
 
   return (
-    <PremiumCard style={{ ...styles.card, ...cardAccent }}>
+    <PremiumCard style={{ ...styles.card, borderStartWidth: 3, borderStartColor: accentColor }}>
       <View style={[styles.cardHeader, isAr && styles.rowReverse]}>
         <TypeChip type={item.type} />
         <StatusPill label={statusLabel(item.status)} tone={statusTone(item.status)} numberOfLines={1} />

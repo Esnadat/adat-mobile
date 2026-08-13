@@ -6,7 +6,6 @@ import {
   NavCalendarIcon,
   NavDocumentIcon,
   NavGridIcon,
-  NavPersonIcon,
 } from "../components/ui/NavIcons";
 import { AttendanceScreen } from "../screens/AttendanceScreen";
 import { CalendarScreen } from "../screens/CalendarScreen";
@@ -35,10 +34,16 @@ interface TabConfig {
 
 const TABS: TabConfig[] = [
   {
-    id: "profile",
-    labelKey: "profileTab",
-    titleKey: "profileTab",
-    icon: (a) => <NavPersonIcon active={a} />,
+    id: "notifications",
+    labelKey: "notificationsTab",
+    titleKey: "notificationsTab",
+    icon: (a) => (
+      <Ionicons
+        name={a ? "notifications" : "notifications-outline"}
+        size={22}
+        color={a ? colors.successDark : colors.textMuted}
+      />
+    ),
   },
   {
     id: "requests",
@@ -126,7 +131,9 @@ export function TabNavigator() {
                             : "My Team"
                           : moreStackView === "statement"
                             ? i18n.t("stmtTitle")
-                            : i18n.t("settingsTitle")}
+                            : moreStackView === "profile"
+                              ? i18n.t("profileTab")
+                              : i18n.t("settingsTitle")}
               </Text>
               <View style={styles.headerSide} />
             </View>
@@ -171,10 +178,14 @@ export function TabNavigator() {
             <View style={styles.screen}>
               <MonthlyStatementScreen />
             </View>
+          ) : moreStackView === "profile" ? (
+            <View style={styles.screen}>
+              <ProfileScreen />
+            </View>
           ) : (
             <>
-              <View style={[styles.screen, { display: activeTab === "profile" ? "flex" : "none" }]}>
-                <ProfileScreen />
+              <View style={[styles.screen, { display: activeTab === "notifications" ? "flex" : "none" }]}>
+                <NotificationsScreen />
               </View>
               <View style={[styles.screen, { display: activeTab === "requests" ? "flex" : "none" }]}>
                 <RequestsHubScreen />
@@ -183,7 +194,7 @@ export function TabNavigator() {
                 <AttendanceScreen
                   onGoRequests={() => goTab("requests")}
                   onGoCalendar={() => goTab("calendar")}
-                  onGoProfile={() => goTab("profile")}
+                  onGoProfile={() => setMoreStackView("profile")}
                   onOpenPayroll={() => setMoreStackView("payroll")}
                 />
               </View>

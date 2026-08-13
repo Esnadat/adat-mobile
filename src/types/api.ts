@@ -6,7 +6,7 @@ export type RequestType =
   | "attendance_adjustment"
   | "device_change"
   | "overtime";
-export type RequestStatus = "pending" | "approved" | "rejected";
+export type RequestStatus = "pending" | "approved" | "rejected" | "cancelled";
 
 export interface UserSession {
   /** Best-effort employee / doc identifier for display (may match email if API omits) */

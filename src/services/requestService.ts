@@ -49,7 +49,8 @@ type MobileLeaveType = {
 function normalizeRequestStatus(raw: unknown): RequestStatus {
   const s = String(raw ?? "").toLowerCase().trim();
   if (s === "approved") return "approved";
-  if (s === "rejected" || s === "cancelled") return "rejected";
+  if (s === "cancelled") return "cancelled";
+  if (s === "rejected") return "rejected";
   if (s === "completed" || s === "closed") return "approved";
   // "open", "draft", "pending", workflow states → pending
   return "pending";

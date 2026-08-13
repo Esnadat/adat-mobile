@@ -1,6 +1,6 @@
 import * as Location from "expo-location";
 import React, { useEffect, useRef, useState } from "react";
-import { Alert, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { HomeAnnouncements } from "../components/home/HomeAnnouncements";
 import { HomeHeroBand } from "../components/home/HomeHeroBand";
 import { HomeTodaySections } from "../components/home/HomeTodaySections";
@@ -86,7 +86,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number, timeoutMessage: string)
 export function AttendanceScreen({
   onGoRequests: _onGoRequests,
   onGoCalendar: _onGoCalendar,
-  onGoProfile: _onGoProfile,
+  onGoProfile,
   onOpenPayroll: _onOpenPayroll,
 }: AttendanceScreenProps) {
   const { user } = useAuth();
@@ -462,7 +462,17 @@ export function AttendanceScreen({
         paddingBottom: floatingTabBarBottomInset + 16,
       }}
       headerContent={
-        <View style={[styles.identityChip, isAr ? styles.identityRowAr : styles.identityRowEn]}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={i18n.t("profileTab")}
+          onPress={onGoProfile}
+          hitSlop={8}
+          style={({ pressed }) => [
+            styles.identityChip,
+            isAr ? styles.identityRowAr : styles.identityRowEn,
+            pressed && styles.identityChipPressed,
+          ]}
+        >
           <View style={[styles.identityText, { alignItems: isAr ? "flex-end" : "flex-start" }]}>
             {displayName ? (
               <Text style={[styles.identityName, isAr && styles.noTrack]} numberOfLines={1}>
@@ -478,7 +488,7 @@ export function AttendanceScreen({
           <View style={styles.avatarRingHeader}>
             <EmployeeAvatar photoUrl={user?.employeePhotoUrl} initialSource={initialSource} size={34} />
           </View>
-        </View>
+        </Pressable>
       }
     >
       <HomeHeroBand
@@ -513,6 +523,7 @@ const styles = StyleSheet.create({
   noTrack: { letterSpacing: 0 },
   identityRowEn: { flexDirection: "row" },
   identityRowAr: { flexDirection: "row-reverse" },
+  identityChipPressed: { opacity: 0.9, transform: [{ scale: 0.995 }] },
   identityChip: {
     width: "100%",
     borderRadius: 14,

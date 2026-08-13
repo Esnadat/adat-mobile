@@ -3,7 +3,7 @@ export type RootStackParamList = {
   Main: undefined;
 };
 
-export type TabId = "profile" | "requests" | "attendance" | "calendar" | "more";
+export type TabId = "notifications" | "requests" | "attendance" | "calendar" | "more";
 
 /** Sub-views opened from the More tab (same stack as main tabs; no new routes). */
 export type MoreStackView =
@@ -13,4 +13,5 @@ export type MoreStackView =
   | "notifications"
   | "balances"
   | "team"
-  | "statement";
+  | "statement"
+  | "profile";
