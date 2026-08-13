@@ -4,6 +4,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider } from "./src/context/AuthContext";
 import { LocaleProvider } from "./src/i18n/LocaleContext";
 import { AppNavigator } from "./src/navigation/AppNavigator";
+import { OfflineBanner } from "./src/components/ui/OfflineBanner";
 
 export default function App() {
   return (
@@ -13,6 +14,7 @@ export default function App() {
           <NavigationContainer>
             <StatusBar style="auto" />
             <AppNavigator />
+            <OfflineBanner />
           </NavigationContainer>
         </AuthProvider>
       </LocaleProvider>
