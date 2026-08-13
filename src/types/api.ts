@@ -204,6 +204,14 @@ export interface EmployeeCheckinLogRow {
   creation?: string | null;
 }
 
+/** Assigned attendance location (geofence center + radius) from GET /api/attendance/location. */
+export interface AssignedLocation {
+  locationName: string | null;
+  latitude: number;
+  longitude: number;
+  radiusMeters: number;
+}
+
 export type CalendarEventType = "task" | "announcement" | "holiday" | "leave" | "permission";
 
 export interface CalendarOverlayEvent {

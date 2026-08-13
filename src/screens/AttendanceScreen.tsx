@@ -18,7 +18,8 @@ import { floatingTabBarBottomInset } from "../theme/shadows";
 import { type as typeStyles } from "../theme/typography";
 import { formatMobileDate, formatMobileTimeFromDate } from "../utils/mobileDateFormat";
 import { hapticError, hapticSuccess } from "../utils/haptics";
-import { EmployeeTask, EstablishmentAnnouncement } from "../types/api";
+import { AssignedLocation, EmployeeTask, EstablishmentAnnouncement } from "../types/api";
+import { GeofenceView } from "../components/attendance/GeofenceView";
 
 const DEBUG_ATTENDANCE_LOCATION = false;
 const DEBUG_ATTENDANCE_DIAG = false;
@@ -107,11 +108,38 @@ export function AttendanceScreen({
   const [announcementsLoading, setAnnouncementsLoading] = useState(false);
   const [openTasks, setOpenTasks] = useState<EmployeeTask[]>([]);
   const [openTasksLoading, setOpenTasksLoading] = useState(false);
+  const [assignedLocation, setAssignedLocation] = useState<AssignedLocation | null>(null);
+  const [userCoords, setUserCoords] = useState<{ latitude: number; longitude: number } | null>(null);
 
   useEffect(() => {
     isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
+    };
+  }, []);
+
+  // Assigned geofence (center + radius) and a best-effort last-known position for the
+  // preview. Uses last-known GPS only (no permission prompt here); the check-in flow
+  // still requests precise location and the server enforces the geofence.
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      const loc = await attendanceService.getAssignedLocation();
+      if (active) setAssignedLocation(loc);
+      try {
+        const perm = await Location.getForegroundPermissionsAsync();
+        if (perm.status === "granted") {
+          const last = await Location.getLastKnownPositionAsync();
+          if (active && last?.coords) {
+            setUserCoords({ latitude: last.coords.latitude, longitude: last.coords.longitude });
+          }
+        }
+      } catch {
+        /* preview only — ignore */
+      }
+    })();
+    return () => {
+      active = false;
     };
   }, []);
 
@@ -514,6 +542,12 @@ export function AttendanceScreen({
         checkInFooterHint={i18n.t("attendanceReadyHint")}
       />
 
+      {assignedLocation ? (
+        <View style={styles.geofenceWrap}>
+          <GeofenceView location={assignedLocation} userCoords={userCoords} isAr={isAr} />
+        </View>
+      ) : null}
+
       <HomeAnnouncements items={announcements} loading={announcementsLoading} isAr={isAr} />
 
       <View style={styles.feedWrap}>
@@ -569,6 +603,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     overflow: "hidden",
+  },
+  geofenceWrap: {
+    marginTop: 14,
   },
   feedWrap: {
     marginTop: 4,

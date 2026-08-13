@@ -1,4 +1,5 @@
 import {
+  AssignedLocation,
   CheckInOutPayload,
   EmployeeCheckinLogRow,
   OfficialHoliday,
@@ -200,6 +201,33 @@ export const attendanceService = {
       return out;
     } catch {
       return [];
+    }
+  },
+
+  /**
+   * The employee's assigned attendance location (geofence center + radius) from
+   * GET /api/attendance/location. Session-scoped; returns null when no location is
+   * assigned (mobile then simply skips the geofence preview — the server still
+   * enforces the geofence on check-in).
+   */
+  async getAssignedLocation(): Promise<AssignedLocation | null> {
+    try {
+      const response: AxiosResponse<unknown> = await http.get("/api/attendance/location");
+      const body = response.data;
+      const data = isRecord(body) && isRecord(body.data) ? body.data : null;
+      if (!data) return null;
+      const lat = Number(data.latitude);
+      const lon = Number(data.longitude);
+      const radius = Number(data.radiusMeters);
+      if (!Number.isFinite(lat) || !Number.isFinite(lon) || !Number.isFinite(radius) || radius <= 0) return null;
+      return {
+        locationName: data.locationName != null ? String(data.locationName) : null,
+        latitude: lat,
+        longitude: lon,
+        radiusMeters: radius,
+      };
+    } catch {
+      return null;
     }
   },
 
