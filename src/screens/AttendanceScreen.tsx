@@ -17,6 +17,7 @@ import { colors } from "../theme/colors";
 import { floatingTabBarBottomInset } from "../theme/shadows";
 import { type as typeStyles } from "../theme/typography";
 import { formatMobileDate, formatMobileTimeFromDate } from "../utils/mobileDateFormat";
+import { hapticError, hapticSuccess } from "../utils/haptics";
 import { EmployeeTask, EstablishmentAnnouncement } from "../types/api";
 
 const DEBUG_ATTENDANCE_LOCATION = false;
@@ -351,12 +352,14 @@ export function AttendanceScreen({
         await withTimeout(attendanceService.checkOut(coords), ATTENDANCE_API_TIMEOUT_MS, "ATTENDANCE_API_TIMEOUT");
       }
       attendanceDiag("attendance.api.success", { type });
+      hapticSuccess();
       const timeStr = formatMobileTimeFromDate(new Date());
-      const title = i18n.t("success");
-      const body =
+      const title = type === "in" ? i18n.t("attendanceInDone") : i18n.t("attendanceOutDone");
+      const firstLine =
         type === "in"
           ? `${i18n.t("attendanceSuccessIn")} ${timeStr}`
           : `${i18n.t("attendanceSuccessOut")} ${timeStr}`;
+      const body = `${firstLine}\n${i18n.t("attendanceLocationVerified")}`;
       const dayKey = localDayKey(new Date());
       if (isMountedRef.current) {
         if (type === "in") {
@@ -373,6 +376,7 @@ export function AttendanceScreen({
         // Alert failure should never crash attendance action flow.
       }
     } catch (error) {
+      hapticError();
       const rawMessage = error instanceof Error ? error.message : String(error);
       if (rawMessage === "LOCATION_TIMEOUT") {
         const timeoutMessage =

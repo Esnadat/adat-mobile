@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
 import { PremiumCard } from "../components/ui/PremiumCard";
 import { useAppLocale } from "../i18n/LocaleContext";
+import { localizeLeaveTypeLabel } from "../utils/leaveTypeLabel";
 import { colors } from "../theme/colors";
 import { floatingTabBarBottomInset } from "../theme/shadows";
 import { getApiErrorMessage } from "../services/http";
@@ -91,7 +92,7 @@ export function MyBalancesScreen() {
           <PremiumCard key={r.name} style={styles.card}>
             <View style={[styles.row, isAr && styles.rowR]}>
               <Text style={[styles.type, { textAlign: align }]} numberOfLines={1}>
-                {r.label}
+                {localizeLeaveTypeLabel(r.label, locale)}
               </Text>
               <View style={styles.balancePill}>
                 <Text style={styles.balanceNum}>{fmt(r.availableDays)}</Text>

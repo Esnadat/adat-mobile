@@ -629,12 +629,11 @@ export function CalendarScreen() {
                         >
                           {cell.dayNumber}
                         </Text>
-
-                        {cell.workedMinutes > 0 && cell.isCurrentMonth ? <View style={[styles.workDot, { backgroundColor: vis.dot }]} /> : null}
-
-                        {isToday && cell.isCurrentMonth ? <View style={styles.todayDot} /> : null}
                       </View>
 
+                      {/* Single, consistent indicator row BELOW the circle. A dot = an event
+                          on that day (task / announcement / leave / holiday); attendance status
+                          is shown by the circle color, today by its ring. */}
                       {cell.isCurrentMonth && visibleEvents.length > 0 ? (
                         <View style={[styles.overlayDotsRow, isAr && styles.overlayDotsRowAr]}>
                           {visibleEvents.map((event) => (

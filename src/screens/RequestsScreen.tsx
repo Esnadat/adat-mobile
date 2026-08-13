@@ -17,6 +17,7 @@ import { type as typeStyles } from "../theme/typography";
 import { LeaveBalanceCheckResult, RequestType } from "../types/api";
 import { formatApiDate } from "../utils/formatApiDate";
 import { formatMobileDate } from "../utils/mobileDateFormat";
+import { localizeLeaveTypeLabel } from "../utils/leaveTypeLabel";
 import { MyRequestsScreen } from "./MyRequestsScreen";
 
 type ActiveRequestType = "leave" | "permission" | "support";
@@ -167,11 +168,12 @@ export function RequestsScreen({ onViewMyRequests }: RequestsScreenProps = {}) {
       const rows = await requestService.getLeaveTypes();
       const options = rows.map((row) => {
         const hasBalance = row.balance != null;
+        const localizedLabel = localizeLeaveTypeLabel(row.label, locale);
         return {
           value: row.name,
           label: hasBalance
-            ? `${row.label} — ${i18n.t("leaveBalanceLabel")} ${row.balance}`
-            : row.label,
+            ? `${localizedLabel} — ${i18n.t("leaveBalanceLabel")} ${row.balance}`
+            : localizedLabel,
         };
       });
       setLeaveTypeOptions(options);
