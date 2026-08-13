@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { SkeletonList } from "../components/ui/Skeleton";
 import { Ionicons } from "../components/ui/NavIcons";
 import { EmployeeAvatar } from "../components/ui/EmployeeAvatar";
 import { StatTile } from "../components/ui/StatTile";
@@ -291,9 +292,7 @@ export function MonthlyStatementScreen() {
       <Text style={[styles.sectionTitle, { textAlign: align }]}>{i18n.t("stmtDailyLog")}</Text>
 
       {loading && !statement ? (
-        <View style={styles.center}>
-          <ActivityIndicator color={colors.primary} />
-        </View>
+        <SkeletonList count={5} />
       ) : error ? (
         <View style={styles.errorBox}>
           <Text style={styles.errorText}>{error}</Text>

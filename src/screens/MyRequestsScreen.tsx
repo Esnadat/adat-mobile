@@ -12,6 +12,7 @@ import { colors } from "../theme/colors";
 import { floatingTabBarBottomInset } from "../theme/shadows";
 import { type as typeStyles } from "../theme/typography";
 import { formatIsoDateForDisplay, formatMobileTimeString, formatYyyyMmDdForDisplay } from "../utils/mobileDateFormat";
+import { SkeletonList } from "../components/ui/Skeleton";
 
 type RequestsFilter = "all" | "pending" | "approved" | "rejected" | "support";
 
@@ -363,7 +364,7 @@ export function MyRequestsScreen({ focused = true }: { focused?: boolean }) {
         renderItem={({ item }) => (
           <RequestCard item={item} isAr={isAr} onCancel={handleCancel} busy={cancellingId === item.id} />
         )}
-        ListEmptyComponent={loading ? null : <EmptyState filtered={activeFilter !== "all"} />}
+        ListEmptyComponent={loading ? <SkeletonList count={4} /> : <EmptyState filtered={activeFilter !== "all"} />}
         showsVerticalScrollIndicator={false}
       />
     </View>

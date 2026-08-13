@@ -4,6 +4,7 @@ import { Ionicons } from "../components/ui/NavIcons";
 import { PremiumCard } from "../components/ui/PremiumCard";
 import { ScreenShell } from "../components/ui/ScreenShell";
 import { StatTile } from "../components/ui/StatTile";
+import { Skeleton } from "../components/ui/Skeleton";
 import { useAppLocale } from "../i18n/LocaleContext";
 import { i18n } from "../i18n";
 import {
@@ -528,10 +529,14 @@ export function CalendarScreen() {
       ) : null}
 
       {loading ? (
-        <PremiumCard style={styles.stateCard}>
-          <ActivityIndicator size="small" color={colors.primary} />
-          <Text style={[styles.stateText, { textAlign }]}>{i18n.t("loading")}</Text>
-        </PremiumCard>
+        <View>
+          <View style={styles.summaryRow}>
+            <Skeleton height={92} radius={14} style={{ flex: 1 }} />
+            <Skeleton height={92} radius={14} style={{ flex: 1 }} />
+            <Skeleton height={92} radius={14} style={{ flex: 1 }} />
+          </View>
+          <Skeleton height={260} radius={16} />
+        </View>
       ) : null}
 
       {error ? (
