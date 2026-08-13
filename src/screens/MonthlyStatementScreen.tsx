@@ -106,28 +106,35 @@ function DayRecord({ day, locale, isAr }: { day: StatementDay; locale: string; i
         <View style={styles.dayBody}>
           <View style={[styles.dayHeaderRow, isAr && styles.rowReverse]}>
             <StatusPill label={statusLabel(day.status)} tone={statusTone(day.status)} numberOfLines={1} />
+            {showColumns ? (
+              <Text style={styles.workedHeadline}>{fmtHM(day.workedMinutes, locale)}</Text>
+            ) : null}
           </View>
 
           {showColumns ? (
-            <View style={[styles.metricsRow, isAr && styles.rowReverse]}>
-              <View style={styles.metricCol}>
-                <Text style={[styles.metricLabel, { textAlign: align }]}>{i18n.t("stmtOvertime")}</Text>
-                <Text
-                  style={[styles.metricValue, { textAlign: align, color: day.overtimeMinutes > 0 ? colors.successDark : colors.textMuted }]}
-                >
-                  {day.overtimeMinutes > 0 ? fmtHM(day.overtimeMinutes, locale) : "—"}
-                </Text>
-              </View>
-              <View style={styles.metricDivider} />
-              <View style={styles.metricCol}>
-                <Text style={[styles.metricLabel, { textAlign: align }]}>{i18n.t("stmtMissing")}</Text>
-                <Text
-                  style={[styles.metricValue, { textAlign: align, color: day.missingMinutes > 0 ? colors.danger : colors.textMuted }]}
-                >
-                  {day.missingMinutes > 0 ? fmtHM(day.missingMinutes, locale) : "—"}
-                </Text>
-              </View>
-            </View>
+            <>
+              <Text style={[styles.workedOf, { textAlign: align }]}>
+                {`${i18n.t("stmtOfExpected")} ${fmtHM(day.expectedMinutes ?? 0, locale)}`}
+              </Text>
+              {day.overtimeMinutes > 0 || day.missingMinutes > 0 ? (
+                <View style={[styles.chipsRow, isAr && styles.rowReverse]}>
+                  {day.overtimeMinutes > 0 ? (
+                    <View style={[styles.chip, { backgroundColor: colors.successLight }]}>
+                      <Text style={[styles.chipText, { color: colors.successDark }]}>
+                        {`${i18n.t("stmtOvertime")} +${fmtHM(day.overtimeMinutes, locale)}`}
+                      </Text>
+                    </View>
+                  ) : null}
+                  {day.missingMinutes > 0 ? (
+                    <View style={[styles.chip, { backgroundColor: colors.dangerLight }]}>
+                      <Text style={[styles.chipText, { color: colors.danger }]}>
+                        {`${i18n.t("stmtMissing")} −${fmtHM(day.missingMinutes, locale)}`}
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+              ) : null}
+            </>
           ) : (
             <Text style={[styles.dayOffHint, { textAlign: align }]}>
               {day.status === "off" ? i18n.t("stmtRestDay") : i18n.t("stmtNoSchedule")}
@@ -399,12 +406,12 @@ const styles = StyleSheet.create({
   badgeWeekday: { fontSize: 11, fontWeight: "700" },
   badgeDay: { fontSize: 22, fontWeight: "800", fontVariant: ["tabular-nums"], letterSpacing: -0.3 },
   dayBody: { flex: 1, gap: spacing.sm },
-  dayHeaderRow: { flexDirection: "row", alignItems: "center" },
-  metricsRow: { flexDirection: "row", alignItems: "center" },
-  metricCol: { flex: 1, gap: 2 },
-  metricDivider: { width: StyleSheet.hairlineWidth, alignSelf: "stretch", backgroundColor: colors.divider, marginHorizontal: spacing.md },
-  metricLabel: { fontSize: 11, fontWeight: "700", color: colors.textMuted },
-  metricValue: { fontSize: 15, fontWeight: "800", fontVariant: ["tabular-nums"] },
+  dayHeaderRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: spacing.sm },
+  workedHeadline: { fontSize: 16, fontWeight: "800", color: colors.ink, fontVariant: ["tabular-nums"], letterSpacing: -0.2 },
+  workedOf: { fontSize: 12, fontWeight: "600", color: colors.textMuted, fontVariant: ["tabular-nums"] },
+  chipsRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, marginTop: 2 },
+  chip: { borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 4 },
+  chipText: { fontSize: 11.5, fontWeight: "800", fontVariant: ["tabular-nums"] },
   dayOffHint: { fontSize: 12.5, fontWeight: "600", color: colors.textMuted },
 
   center: { paddingVertical: spacing.xxxl, alignItems: "center" },
