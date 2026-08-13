@@ -20,6 +20,7 @@ export type MoreScreenProps = {
   onOpenNotifications: () => void;
   onOpenBalances: () => void;
   onOpenTeam: () => void;
+  onOpenStatement: () => void;
 };
 
 export function MoreScreen({
@@ -29,6 +30,7 @@ export function MoreScreen({
   onOpenNotifications,
   onOpenBalances,
   onOpenTeam,
+  onOpenStatement,
 }: MoreScreenProps) {
   const { logout } = useAuth();
   const logoutInFlightRef = useRef(false);
@@ -115,6 +117,16 @@ export function MoreScreen({
             title={isAr ? "أرصدتي" : "My Balances"}
             subtitle={isAr ? "أرصدة الإجازات المتاحة" : "Available leave balances"}
             onPress={onOpenBalances}
+            showChevron
+          />
+          <ActionTile
+            style={styles.tile}
+            variant="vertical"
+            visualTone="active"
+            icon={<Ionicons name="reader-outline" size={TILE_ICON} color={stroke} />}
+            title={isAr ? "كشف الدوام الشهري" : "Monthly Statement"}
+            subtitle={isAr ? "الحضور والوقت الإضافي والساعات المفقودة" : "Attendance, overtime & missing hours"}
+            onPress={onOpenStatement}
             showChevron
           />
           {isManager ? (

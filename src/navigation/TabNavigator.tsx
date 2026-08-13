@@ -19,6 +19,7 @@ import { BusinessCardScreen } from "../screens/BusinessCardScreen";
 import { NotificationsScreen } from "../screens/NotificationsScreen";
 import { MyBalancesScreen } from "../screens/MyBalancesScreen";
 import { MyTeamScreen } from "../screens/MyTeamScreen";
+import { MonthlyStatementScreen } from "../screens/MonthlyStatementScreen";
 import { useAppLocale } from "../i18n/LocaleContext";
 import { i18n } from "../i18n";
 import { colors } from "../theme/colors";
@@ -123,7 +124,9 @@ export function TabNavigator() {
                           ? locale === "ar"
                             ? "فريقي"
                             : "My Team"
-                          : i18n.t("settingsTitle")}
+                          : moreStackView === "statement"
+                            ? i18n.t("stmtTitle")
+                            : i18n.t("settingsTitle")}
               </Text>
               <View style={styles.headerSide} />
             </View>
@@ -164,6 +167,10 @@ export function TabNavigator() {
             <View style={styles.screen}>
               <MyTeamScreen />
             </View>
+          ) : moreStackView === "statement" ? (
+            <View style={styles.screen}>
+              <MonthlyStatementScreen />
+            </View>
           ) : (
             <>
               <View style={[styles.screen, { display: activeTab === "profile" ? "flex" : "none" }]}>
@@ -191,6 +198,7 @@ export function TabNavigator() {
                   onOpenNotifications={() => setMoreStackView("notifications")}
                   onOpenBalances={() => setMoreStackView("balances")}
                   onOpenTeam={() => setMoreStackView("team")}
+                  onOpenStatement={() => setMoreStackView("statement")}
                 />
               </View>
             </>

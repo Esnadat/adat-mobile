@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, RefreshControl, StyleSheet, Text, View } 
 import { Ionicons } from "../components/ui/NavIcons";
 import { PremiumCard } from "../components/ui/PremiumCard";
 import { ScreenShell } from "../components/ui/ScreenShell";
+import { StatTile } from "../components/ui/StatTile";
 import { useAppLocale } from "../i18n/LocaleContext";
 import { i18n } from "../i18n";
 import {
@@ -421,6 +422,18 @@ export function CalendarScreen() {
 
   const monthDays = useMemo(() => grid.filter((d) => d.isCurrentMonth), [grid]);
 
+  const monthSummary = useMemo(() => {
+    let present = 0;
+    let incomplete = 0;
+    let absent = 0;
+    for (const d of monthDays) {
+      if (d.status === "complete") present += 1;
+      else if (d.status === "partial") incomplete += 1;
+      else if (d.status === "absent") absent += 1;
+    }
+    return { present, incomplete, absent };
+  }, [monthDays]);
+
   useEffect(() => {
     if (monthDays.length === 0) {
       setSelectedDate(null);
@@ -543,7 +556,31 @@ export function CalendarScreen() {
 
       {showGrid ? (
         <>
-          <View style={[styles.weekdayRow, { flexDirection: rowDir }]}> 
+          <View style={styles.summaryRow}>
+            <StatTile
+              tone="success"
+              isAr={isAr}
+              icon={<Ionicons name="checkmark-circle" size={20} color={colors.successDark} />}
+              value={monthSummary.present}
+              label={i18n.t("stmtPresent")}
+            />
+            <StatTile
+              tone="warning"
+              isAr={isAr}
+              icon={<Ionicons name="alert-circle" size={20} color={colors.warning} />}
+              value={monthSummary.incomplete}
+              label={i18n.t("stmtIncomplete")}
+            />
+            <StatTile
+              tone="danger"
+              isAr={isAr}
+              icon={<Ionicons name="close-circle" size={20} color={colors.danger} />}
+              value={monthSummary.absent}
+              label={i18n.t("stmtAbsent")}
+            />
+          </View>
+
+          <View style={[styles.weekdayRow, { flexDirection: rowDir }]}>
             {weekdays.map((w) => (
               <Text key={w} style={styles.weekdayText}>
                 {w}
@@ -843,6 +880,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   retryText: { color: colors.white, fontWeight: "800", fontSize: 13 },
+  summaryRow: { flexDirection: "row", gap: 12, marginBottom: 14 },
   weekdayRow: { marginBottom: 4, paddingHorizontal: 2, justifyContent: "space-between" },
   weekdayText: { width: CELL_W, textAlign: "center", fontSize: 10, fontWeight: "800", color: colors.ink },
   gridWrap: { marginBottom: 8 },

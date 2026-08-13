@@ -12,4 +12,5 @@ export type MoreStackView =
   | "businessCard"
   | "notifications"
   | "balances"
-  | "team";
+  | "team"
+  | "statement";
