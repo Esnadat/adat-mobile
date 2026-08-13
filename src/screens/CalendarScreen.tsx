@@ -690,6 +690,16 @@ export function CalendarScreen() {
               </View>
 
               <View style={styles.eventsSection}>
+                {selectedAnnouncements.length === 0 &&
+                selectedTasks.length === 0 &&
+                selectedRequests.length === 0 &&
+                selectedHolidays.length === 0 ? (
+                  <View style={styles.eventsEmpty}>
+                    <Ionicons name="sparkles-outline" size={20} color={colors.textMuted} />
+                    <Text style={[styles.eventsEmptyText, { textAlign }]}>{i18n.t("calendarNoEventsDay")}</Text>
+                  </View>
+                ) : null}
+
                 {selectedAnnouncements.length > 0 ? (
                   <View style={styles.eventGroup}>
                     <Text style={[styles.eventsSectionTitle, { textAlign }]}>
@@ -944,6 +954,8 @@ const styles = StyleSheet.create({
   detailLabel: { fontSize: 11, fontWeight: "800", color: colors.textSecondary, marginBottom: 2 },
   detailValue: { fontSize: 13, fontWeight: "800", color: colors.ink },
   eventsSection: { marginTop: 8, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 8 },
+  eventsEmpty: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 8 },
+  eventsEmptyText: { flex: 1, fontSize: 13, fontWeight: "600", color: colors.textMuted, lineHeight: 19 },
   eventGroup: { marginBottom: 8 },
   eventsSectionTitle: { fontSize: 12, fontWeight: "800", color: colors.ink, marginBottom: 8 },
   noEventsText: { fontSize: 12, fontWeight: "700", color: colors.textMuted },
