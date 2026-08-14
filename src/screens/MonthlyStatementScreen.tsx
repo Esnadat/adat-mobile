@@ -1,5 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RootStackParamList } from "../types/navigation";
 import { SkeletonList } from "../components/ui/Skeleton";
 import { Ionicons } from "../components/ui/NavIcons";
 import { EmployeeAvatar } from "../components/ui/EmployeeAvatar";
@@ -91,10 +94,23 @@ function riyadhNow(): { year: number; month1: number } {
 
 function DayRecord({ day, locale, isAr }: { day: StatementDay; locale: string; isAr: boolean }) {
   const vis = badgeVisual(day.status);
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const openDetail = () =>
+    navigation.navigate("DayDetail", {
+      date: day.date,
+      statusKey: day.status,
+      workedMinutes: day.workedMinutes,
+      expectedMinutes: day.expectedMinutes,
+      isWorkDay: day.isWorkDay,
+    });
   const align = isAr ? "right" : "left";
   const showColumns = day.isWorkDay && (day.status === "complete" || day.status === "partial" || day.status === "absent");
   return (
-    <View style={styles.dayCard}>
+    <Pressable
+      accessibilityRole="button"
+      onPress={openDetail}
+      style={({ pressed }) => [styles.dayCard, pressed && styles.dayCardPressed]}
+    >
       <View style={[styles.dayRow, isAr && styles.rowReverse]}>
         <View style={[styles.dateBadge, { backgroundColor: vis.fill, borderColor: vis.ring }]}>
           <Text style={[styles.badgeWeekday, { color: vis.text }]} numberOfLines={1}>
@@ -141,8 +157,9 @@ function DayRecord({ day, locale, isAr }: { day: StatementDay; locale: string; i
             </Text>
           )}
         </View>
+        <Ionicons name={isAr ? "chevron-back" : "chevron-forward"} size={16} color={colors.textMuted} />
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -384,6 +401,7 @@ const styles = StyleSheet.create({
 
   sectionTitle: { fontSize: 14, fontWeight: "800", color: colors.ink, marginBottom: spacing.md, letterSpacing: -0.1 },
 
+  dayCardPressed: { opacity: 0.92, transform: [{ scale: 0.995 }] },
   dayCard: {
     backgroundColor: colors.surface,
     borderRadius: radius.md,

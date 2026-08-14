@@ -1,9 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { Ionicons } from "../components/ui/NavIcons";
 import { EmptyPanel } from "../components/ui/EmptyPanel";
 import { PremiumCard } from "../components/ui/PremiumCard";
 import { StatusPill } from "../components/ui/StatusPill";
 import type { StatusPillTone } from "../components/ui/StatusPill";
+import type { RootStackParamList } from "../types/navigation";
 import { i18n } from "../i18n";
 import { useAppLocale } from "../i18n/LocaleContext";
 import { requestService } from "../services/requestService";
@@ -194,12 +198,21 @@ function RequestCard({
 
   const title = item.type === "support" ? item.subject || i18n.t("support") : dateLabel;
   const meta = item.type === "support" ? dateLabel : null;
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={() => navigation.navigate("RequestDetail", { id: item.id, type: item.type })}
+      style={({ pressed }) => pressed && styles.cardPressed}
+    >
     <PremiumCard style={{ ...styles.card, borderStartWidth: 3, borderStartColor: accentColor }}>
       <View style={[styles.cardHeader, isAr && styles.rowReverse]}>
         <TypeChip type={item.type} />
-        <StatusPill label={statusLabel(item.status)} tone={statusTone(item.status)} numberOfLines={1} />
+        <View style={[styles.headerEnd, isAr && styles.rowReverse]}>
+          <StatusPill label={statusLabel(item.status)} tone={statusTone(item.status)} numberOfLines={1} />
+          <Ionicons name={isAr ? "chevron-back" : "chevron-forward"} size={16} color={colors.textMuted} />
+        </View>
       </View>
       {title ? (
         <Text style={[styles.cardTitle, { textAlign }]} numberOfLines={2} selectable={false}>
@@ -236,6 +249,7 @@ function RequestCard({
         </View>
       ) : null}
     </PremiumCard>
+    </Pressable>
   );
 }
 
@@ -424,6 +438,8 @@ const styles = StyleSheet.create({
   cardAttendanceAdj: { borderStartWidth: 3, borderStartColor: colors.warning },
   cardOvertime: { borderStartWidth: 3, borderStartColor: colors.primary },
   cardDeviceChange: { borderStartWidth: 3, borderStartColor: colors.ink },
+  cardPressed: { opacity: 0.92, transform: [{ scale: 0.995 }] },
+  headerEnd: { flexDirection: "row", alignItems: "center", gap: 6 },
   cardHeader: {
     flexDirection: "row",
     justifyContent: "space-between",

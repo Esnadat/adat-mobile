@@ -6,6 +6,9 @@ import { ScreenShell } from "../components/ui/ScreenShell";
 import { StatTile } from "../components/ui/StatTile";
 import { Skeleton } from "../components/ui/Skeleton";
 import { useAppLocale } from "../i18n/LocaleContext";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RootStackParamList } from "../types/navigation";
 import { i18n } from "../i18n";
 import {
   attendanceService,
@@ -340,6 +343,7 @@ function LegendChip({ status, isAr }: { status: MobileWorkCalendarDayStatus; isA
 
 export function CalendarScreen() {
   const { locale } = useAppLocale();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const isAr = locale === "ar";
   const rowDir: "row" | "row-reverse" = isAr ? "row-reverse" : "row";
   const textAlign = isAr ? "right" : "left";
@@ -658,7 +662,25 @@ export function CalendarScreen() {
 
           {selectedDay ? (
             <PremiumCard style={styles.detailCard}>
-              <Text style={[styles.detailTitle, { textAlign }]}>{i18n.t("calendarSelectedDateDetails")}</Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() =>
+                  navigation.navigate("DayDetail", {
+                    date: selectedDay.date,
+                    statusKey: selectedDay.status,
+                    workedMinutes: selectedDay.workedMinutes,
+                    expectedMinutes: selectedDay.expectedMinutes,
+                    isWorkDay: selectedDay.scheduleDay?.is_work_day === true,
+                    shiftName: selectedDay.scheduleDay?.shift_name ?? selectedDay.scheduleDay?.shift_type ?? null,
+                    startTime: selectedDay.scheduleDay?.start_time ?? null,
+                    endTime: selectedDay.scheduleDay?.end_time ?? null,
+                  })
+                }
+                style={({ pressed }) => [styles.detailTitleRow, { flexDirection: rowDir }, pressed && styles.detailTitlePressed]}
+              >
+                <Text style={[styles.detailTitle, { textAlign, flex: 1 }]}>{i18n.t("calendarSelectedDateDetails")}</Text>
+                <Ionicons name={isAr ? "chevron-back" : "chevron-forward"} size={18} color={colors.primaryDark} />
+              </Pressable>
 
               <View style={styles.detailRows}>
                 <DetailRow label={i18n.t("calendarDateLabel")} value={formatDateLabel(selectedDay.date, locale)} textAlign={textAlign} />
@@ -947,6 +969,8 @@ const styles = StyleSheet.create({
     ...shadowCard,
   },
   detailTitle: { fontSize: 13, fontWeight: "800", color: colors.ink, marginBottom: 8 },
+  detailTitleRow: { alignItems: "center", gap: 8, marginBottom: 2 },
+  detailTitlePressed: { opacity: 0.7 },
   detailRows: { gap: 4 },
   detailRow: {
     borderWidth: 1,

@@ -2,6 +2,9 @@ import React, { useEffect, useRef, useState } from "react";
 import { Ionicons } from "../components/ui/NavIcons";
 import { Image, Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import * as Application from "expo-application";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RootStackParamList } from "../types/navigation";
 import { ActionTile } from "../components/ui/ActionTile";
 import { useAppLocale } from "../i18n/LocaleContext";
 import { ScreenShell } from "../components/ui/ScreenShell";
@@ -34,6 +37,7 @@ export function MoreScreen({
   onOpenStatement,
 }: MoreScreenProps) {
   const { logout } = useAuth();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const logoutInFlightRef = useRef(false);
   const { locale } = useAppLocale();
   const isAr = locale === "ar";
@@ -185,11 +189,11 @@ export function MoreScreen({
             <View style={styles.brandLinkDivider} />
             <Pressable
               hitSlop={8}
-              onPress={() => void Linking.openURL("https://adathr.com")}
+              onPress={() => navigation.navigate("About")}
               style={({ pressed }) => [styles.brandLink, pressed && styles.brandLinkPressed]}
             >
-              <Ionicons name="globe-outline" size={15} color={colors.primaryDark} />
-              <Text style={styles.brandLinkText}>adathr.com</Text>
+              <Ionicons name="information-circle-outline" size={15} color={colors.primaryDark} />
+              <Text style={styles.brandLinkText}>{isAr ? "عن التطبيق" : "About"}</Text>
             </Pressable>
           </View>
         </View>
