@@ -18,6 +18,8 @@ import { floatingTabBarBottomInset } from "../theme/shadows";
 import { type as typeStyles } from "../theme/typography";
 import { formatMobileDate, formatMobileTimeFromDate } from "../utils/mobileDateFormat";
 import { hapticError, hapticSuccess } from "../utils/haptics";
+import { AdatAlert, AdatAlertConfig } from "../components/ui/AdatAlert";
+import { resolveAttendanceError } from "../utils/attendanceErrors";
 import { AssignedLocation, EmployeeTask, EstablishmentAnnouncement } from "../types/api";
 import { GeofenceView } from "../components/attendance/GeofenceView";
 
@@ -110,6 +112,7 @@ export function AttendanceScreen({
   const [openTasksLoading, setOpenTasksLoading] = useState(false);
   const [assignedLocation, setAssignedLocation] = useState<AssignedLocation | null>(null);
   const [userCoords, setUserCoords] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [alertConfig, setAlertConfig] = useState<AdatAlertConfig | null>(null);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -381,7 +384,7 @@ export function AttendanceScreen({
       }
       attendanceDiag("attendance.api.success", { type });
       hapticSuccess();
-      const timeStr = formatMobileTimeFromDate(new Date());
+      const timeStr = formatMobileTimeFromDate(new Date(), locale);
       const title = type === "in" ? i18n.t("attendanceInDone") : i18n.t("attendanceOutDone");
       const firstLine =
         type === "in"
@@ -398,61 +401,51 @@ export function AttendanceScreen({
           setLastCheckOutTimeLabel(timeStr);
         }
       }
-      try {
-        Alert.alert(title, body);
-      } catch {
-        // Alert failure should never crash attendance action flow.
-      }
+      setAlertConfig({ tone: "success", title, message: body });
     } catch (error) {
       hapticError();
       const rawMessage = error instanceof Error ? error.message : String(error);
       if (rawMessage === "LOCATION_TIMEOUT") {
-        const timeoutMessage =
-          locale === "ar"
-            ? "تعذر تحديد موقعك. تأكد من تفعيل الموقع وحاول مرة أخرى."
-            : "Could not detect your location. Please enable location and try again.";
-        if (__DEV__) {
-          console.warn("[attendance-action] location timeout", rawMessage);
-        }
         attendanceDiag("handleAction.locationTimeout", { diag: diagSummary(diag) });
-        try {
-          Alert.alert(i18n.t("error"), timeoutMessage);
-        } catch {
-          // Ignore alert failures; do not rethrow.
-        }
+        setAlertConfig({
+          tone: "danger",
+          title: i18n.t("error"),
+          message:
+            locale === "ar"
+              ? "تعذر تحديد موقعك. تأكد من تفعيل الموقع وحاول مرة أخرى."
+              : "Could not detect your location. Please enable location and try again.",
+        });
         return;
       }
       if (rawMessage === "ATTENDANCE_API_TIMEOUT") {
-        const timeoutMessage =
-          locale === "ar"
-            ? "استغرق تسجيل الحضور وقتًا أطول من المتوقع. حاول مرة أخرى."
-            : "Attendance request took too long. Please try again.";
-        if (__DEV__) {
-          console.warn("[attendance-action] api timeout", rawMessage);
-        }
         attendanceDiag("handleAction.apiTimeout", { type });
-        try {
-          Alert.alert(i18n.t("error"), timeoutMessage);
-        } catch {
-          // Ignore alert failures; do not rethrow.
-        }
+        setAlertConfig({
+          tone: "danger",
+          title: i18n.t("error"),
+          message:
+            locale === "ar"
+              ? "استغرق تسجيل الحضور وقتًا أطول من المتوقع. حاول مرة أخرى."
+              : "Attendance request took too long. Please try again.",
+        });
         return;
       }
-      const safeMessage = getApiErrorMessage(error);
-      attendanceDiag("attendance.api.failure", { type, message: safeMessage });
-      console.error("[attendance-action] failed", safeMessage);
-      try {
-        Alert.alert(i18n.t("error"), safeMessage);
-      } catch {
-        // Ignore alert failures; do not rethrow.
-      }
+      const mapped = resolveAttendanceError(error, locale);
+      attendanceDiag("attendance.api.failure", { type, message: getApiErrorMessage(error) });
+      setAlertConfig({
+        tone: mapped.tone,
+        title: mapped.title,
+        message: mapped.message,
+        confirmLabel: mapped.offerCheckout ? i18n.t("checkOut") : undefined,
+        cancelLabel: mapped.offerCheckout ? i18n.t("cancelRequestConfirmNo") : undefined,
+        onConfirm: mapped.offerCheckout ? () => void handleAction("out") : undefined,
+      });
     } finally {
       if (isMountedRef.current) setLoading(false);
       actionInFlightRef.current = false;
     }
   };
 
-  const timeStr = formatMobileTimeFromDate(now);
+  const timeStr = formatMobileTimeFromDate(now, locale);
   const dateStr = formatMobileDate(now);
   const todayKey = localDayKey(now);
 
@@ -553,6 +546,8 @@ export function AttendanceScreen({
       <View style={styles.feedWrap}>
         <HomeTodaySections isAr={isAr} taskRows={taskRows} tasksLoading={openTasksLoading} />
       </View>
+
+      <AdatAlert config={alertConfig} onClose={() => setAlertConfig(null)} />
     </ScreenShell>
   );
 }

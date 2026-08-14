@@ -104,10 +104,13 @@ export function TabNavigator() {
             <View style={styles.headerRow}>
               <View style={styles.headerSide}>
                 <TouchableOpacity
+                  accessibilityRole="button"
+                  accessibilityLabel={i18n.t("back")}
                   onPress={() => setMoreStackView(null)}
-                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                  hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
+                  style={styles.backBtn}
                 >
-                  <Text style={styles.backBtnText}>{i18n.t("back")}</Text>
+                  <Ionicons name={isAr ? "chevron-forward" : "chevron-back"} size={24} color={colors.ink} />
                 </TouchableOpacity>
               </View>
               <Text style={styles.headerTitle}>
@@ -293,6 +296,14 @@ const styles = StyleSheet.create({
   headerSide: {
     width: 72,
     justifyContent: "center",
+  },
+  backBtn: {
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 12,
+    marginStart: -8,
   },
   backBtnText: {
     fontSize: 15,

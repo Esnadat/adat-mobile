@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Ionicons } from "../components/ui/NavIcons";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import * as Application from "expo-application";
 import { ActionTile } from "../components/ui/ActionTile";
 import { useAppLocale } from "../i18n/LocaleContext";
 import { ScreenShell } from "../components/ui/ScreenShell";
@@ -58,6 +59,9 @@ export function MoreScreen({
 
   const align = isAr ? "right" : "left";
   const brandCaption = isAr ? "بوابة الموظف" : "Employee Portal";
+  const appVersion = Application.nativeApplicationVersion ?? "1.0.0";
+  const buildNumber = Application.nativeBuildVersion ?? "";
+  const SUPPORT_EMAIL = process.env.EXPO_PUBLIC_SUPPORT_EMAIL || "support@adathr.com";
 
   return (
     <ScreenShell
@@ -159,13 +163,35 @@ export function MoreScreen({
           </View>
         </View>
 
-        <View pointerEvents="none" style={styles.brandFooterCard}>
+        <View style={styles.brandFooterCard}>
           <Image
             source={require("../../assets/branding/adat-logo.png")}
             style={styles.brandFooterWordmark}
             resizeMode="contain"
           />
           <Text style={styles.brandFooterCaption}>{brandCaption}</Text>
+          <Text style={styles.brandVersion}>
+            {`${isAr ? "الإصدار" : "Version"} ${appVersion}${buildNumber ? ` (${buildNumber})` : ""}`}
+          </Text>
+          <View style={[styles.brandLinks, isAr && styles.rowReverse]}>
+            <Pressable
+              hitSlop={8}
+              onPress={() => void Linking.openURL(`mailto:${SUPPORT_EMAIL}`)}
+              style={({ pressed }) => [styles.brandLink, pressed && styles.brandLinkPressed]}
+            >
+              <Ionicons name="mail-outline" size={15} color={colors.primaryDark} />
+              <Text style={styles.brandLinkText}>{isAr ? "الدعم" : "Support"}</Text>
+            </Pressable>
+            <View style={styles.brandLinkDivider} />
+            <Pressable
+              hitSlop={8}
+              onPress={() => void Linking.openURL("https://adathr.com")}
+              style={({ pressed }) => [styles.brandLink, pressed && styles.brandLinkPressed]}
+            >
+              <Ionicons name="globe-outline" size={15} color={colors.primaryDark} />
+              <Text style={styles.brandLinkText}>adathr.com</Text>
+            </Pressable>
+          </View>
         </View>
 
         <View style={styles.separator} />
@@ -208,15 +234,34 @@ const styles = StyleSheet.create({
   },
   brandFooterCard: {
     marginTop: 12,
-    height: 66,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
     alignItems: "center",
     justifyContent: "center",
-    gap: 4,
+    gap: 6,
   },
+  rowReverse: { flexDirection: "row-reverse" },
+  brandVersion: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: colors.textMuted,
+    fontVariant: ["tabular-nums"],
+    marginTop: 2,
+  },
+  brandLinks: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginTop: 6,
+  },
+  brandLink: { flexDirection: "row", alignItems: "center", gap: 5, paddingVertical: 4, paddingHorizontal: 4 },
+  brandLinkPressed: { opacity: 0.6 },
+  brandLinkText: { fontSize: 12.5, fontWeight: "800", color: colors.primaryDark },
+  brandLinkDivider: { width: 1, height: 14, backgroundColor: colors.border },
   brandFooterWordmark: {
     width: 164,
     height: 26,

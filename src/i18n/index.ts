@@ -202,6 +202,7 @@ const i18n = new I18n({
     // Attendance
     checkIn: "Check In",
     checkOut: "Check Out",
+    ok: "OK",
     recordAttendance: "Record Attendance",
     gpsNote: "Your location is used only to verify attendance.",
     attendanceSuccessIn: "Checked in at",
@@ -547,6 +548,7 @@ const i18n = new I18n({
     // Attendance
     checkIn: "تسجيل الحضور",
     checkOut: "تسجيل الانصراف",
+    ok: "حسناً",
     recordAttendance: "تسجيل الحضور والانصراف",
     gpsNote: "يُستخدم موقعك فقط للتحقق من تسجيل الحضور.",
     attendanceSuccessIn: "تم تسجيل الحضور في",

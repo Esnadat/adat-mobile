@@ -107,7 +107,7 @@ function supportPriorityLabel(p: string): string {
   return p || i18n.t("notAvailable");
 }
 
-function buildDateLabel(item: EmployeeRequest): string | null {
+function buildDateLabel(item: EmployeeRequest, locale?: string): string | null {
   if (item.type === "support") {
     const datePart = item.createdAt ? formatIsoDateForDisplay(item.createdAt) : null;
     const bits: string[] = [];
@@ -126,8 +126,8 @@ function buildDateLabel(item: EmployeeRequest): string | null {
   if (item.type === "permission" && item.permissionDate) {
     const p = formatYyyyMmDdForDisplay(item.permissionDate);
     if (p) {
-      const st = formatMobileTimeString(item.startTime);
-      const en = formatMobileTimeString(item.endTime);
+      const st = formatMobileTimeString(item.startTime, locale);
+      const en = formatMobileTimeString(item.endTime, locale);
       return st !== "—" || en !== "—" ? `${p}  ·  ${st}–${en}` : p;
     }
   }
@@ -189,7 +189,7 @@ function RequestCard({
   busy: boolean;
 }) {
   const textAlign = isAr ? "right" : "left";
-  const dateLabel = buildDateLabel(item);
+  const dateLabel = buildDateLabel(item, isAr ? "ar" : "en");
   const accentColor = statusAccentColor(item.status);
 
   const title = item.type === "support" ? item.subject || i18n.t("support") : dateLabel;
