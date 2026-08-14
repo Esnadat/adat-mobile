@@ -188,7 +188,7 @@ export function DayDetailScreen() {
               <View key={`${r.type}:${r.id}`} style={[styles.punchRow, isAr && styles.rowReverse, i > 0 && styles.punchDivider]}>
                 <Ionicons name="document-text-outline" size={16} color={colors.textSecondary} />
                 <Text style={[styles.reqText, { textAlign: align }]} numberOfLines={1}>
-                  {`${r.type} · ${r.id}`}
+                  {`${r.type === "leave" ? i18n.t("requestTypeLeave") : r.type === "permission" ? i18n.t("requestTypePermission") : r.type} · ${r.id}`}
                 </Text>
               </View>
             ))}
