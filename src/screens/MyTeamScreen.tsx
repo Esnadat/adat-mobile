@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { PremiumCard } from "../components/ui/PremiumCard";
+import { Ionicons } from "../components/ui/NavIcons";
+import type { RootStackParamList } from "../types/navigation";
 import { useAppLocale } from "../i18n/LocaleContext";
 import { colors } from "../theme/colors";
 import { floatingTabBarBottomInset } from "../theme/shadows";
@@ -9,6 +13,7 @@ import { teamService, type TeamMember, type TeamAttendanceEntry } from "../servi
 
 export function MyTeamScreen() {
   const { locale } = useAppLocale();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const isAr = locale === "ar";
   const align = isAr ? "right" : "left";
   const [loading, setLoading] = useState(true);
@@ -73,28 +78,38 @@ export function MyTeamScreen() {
         </PremiumCard>
       ) : (
         members.map((m) => (
-          <PremiumCard key={m.id} style={styles.card}>
-            <View style={[styles.row, isAr && styles.rowR]}>
-              <View style={styles.flex1}>
-                <Text style={[styles.name, { textAlign: align }]} numberOfLines={1}>
-                  {m.name}
-                </Text>
-                {m.position ? (
-                  <Text style={[styles.meta, { textAlign: align }]} numberOfLines={1}>
-                    {m.position}
+          <Pressable
+            key={m.id}
+            accessibilityRole="button"
+            onPress={() => navigation.navigate("TeamMember", { employee: m.id, name: m.name })}
+            style={({ pressed }) => pressed && styles.cardPressed}
+          >
+            <PremiumCard style={styles.card}>
+              <View style={[styles.row, isAr && styles.rowR]}>
+                <View style={styles.flex1}>
+                  <Text style={[styles.name, { textAlign: align }]} numberOfLines={1}>
+                    {m.name}
                   </Text>
-                ) : null}
-                {m.department ? (
-                  <Text style={[styles.meta, { textAlign: align }]} numberOfLines={1}>
-                    {m.department}
-                  </Text>
-                ) : null}
+                  {m.position ? (
+                    <Text style={[styles.meta, { textAlign: align }]} numberOfLines={1}>
+                      {m.position}
+                    </Text>
+                  ) : null}
+                  {m.department ? (
+                    <Text style={[styles.meta, { textAlign: align }]} numberOfLines={1}>
+                      {m.department}
+                    </Text>
+                  ) : null}
+                </View>
+                <View style={[styles.rowEnd, isAr && styles.rowR]}>
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeTxt}>{statusLabel(m)}</Text>
+                  </View>
+                  <Ionicons name={isAr ? "chevron-back" : "chevron-forward"} size={16} color={colors.textMuted} />
+                </View>
               </View>
-              <View style={styles.badge}>
-                <Text style={styles.badgeTxt}>{statusLabel(m)}</Text>
-              </View>
-            </View>
-          </PremiumCard>
+            </PremiumCard>
+          </Pressable>
         ))
       )}
     </ScrollView>
@@ -107,6 +122,8 @@ const styles = StyleSheet.create({
   hint: { fontSize: 13, color: colors.textMuted, fontWeight: "600", marginBottom: 8, lineHeight: 19 },
   center: { paddingVertical: 32, alignItems: "center" },
   card: { marginTop: 10 },
+  cardPressed: { opacity: 0.92, transform: [{ scale: 0.995 }] },
+  rowEnd: { flexDirection: "row", alignItems: "center", gap: 8 },
   row: { flexDirection: "row", alignItems: "center", gap: 12 },
   rowR: { flexDirection: "row-reverse" },
   flex1: { flex: 1 },

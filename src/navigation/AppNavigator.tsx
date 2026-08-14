@@ -7,6 +7,7 @@ import { LoginScreen } from "../screens/LoginScreen";
 import { TabNavigator } from "./TabNavigator";
 import { DayDetailScreen } from "../screens/DayDetailScreen";
 import { RequestDetailScreen } from "../screens/RequestDetailScreen";
+import { TeamMemberScreen } from "../screens/TeamMemberScreen";
 import { AboutScreen } from "../screens/AboutScreen";
 import { colors } from "../theme/colors";
 import { RootStackParamList } from "../types/navigation";
@@ -44,6 +45,7 @@ export function AppNavigator() {
           <Stack.Screen name="Main" component={TabNavigator} />
           <Stack.Screen name="DayDetail" component={DayDetailScreen} />
           <Stack.Screen name="RequestDetail" component={RequestDetailScreen} />
+          <Stack.Screen name="TeamMember" component={TeamMemberScreen} />
           <Stack.Screen name="About" component={AboutScreen} options={{ presentation: "modal" }} />
         </>
       )}

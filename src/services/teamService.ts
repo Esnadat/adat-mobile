@@ -9,6 +9,31 @@ export interface TeamMember {
   department: string;
 }
 
+export interface TeamMemberPendingRequest {
+  id: string;
+  type: string;
+  leave_type?: string | null;
+  from_date?: string | null;
+  to_date?: string | null;
+  date?: string | null;
+  start_time?: string | null;
+  end_time?: string | null;
+}
+
+export interface TeamMemberDetail {
+  profile: {
+    employee: string;
+    employee_name: string;
+    designation: string;
+    department: string;
+    date_of_joining: string;
+    status: string;
+    mobile: string;
+    email: string;
+  };
+  pendingRequests: TeamMemberPendingRequest[];
+}
+
 /** One member's attendance for a day (best-effort shape from team-attendance-report). */
 export interface TeamAttendanceEntry {
   employee: string;
@@ -44,6 +69,16 @@ export const teamService = {
         } as TeamMember;
       })
       .filter((x): x is TeamMember => x !== null);
+  },
+
+  /**
+   * One direct report's detail. The server enforces that the target is the caller's
+   * direct report (403 otherwise) — this is not a client-side guard.
+   */
+  async getTeamMember(employee: string): Promise<TeamMemberDetail | null> {
+    const res: AxiosResponse<unknown> = await http.get(`/api/manager/team-member/${encodeURIComponent(employee)}`);
+    const body = res.data as { data?: TeamMemberDetail } | undefined;
+    return body?.data ?? null;
   },
 
   /** Today's attendance rows for the team, keyed loosely by employee id/number. */
