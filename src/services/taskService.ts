@@ -29,4 +29,12 @@ export const taskService = {
       return status === "open" || status === "in_progress";
     });
   },
+
+  /**
+   * Update the status of the caller's own task. Server allows only in_progress /
+   * completed and enforces ownership (403 for another employee's task).
+   */
+  async updateTaskStatus(id: string, status: "in_progress" | "completed"): Promise<void> {
+    await http.put(`/api/tasks/${encodeURIComponent(id)}/status`, { status });
+  },
 };

@@ -12,14 +12,16 @@ export type DayDetailParams = {
 
 export type RootStackParamList = {
   Login: undefined;
-  Main: undefined;
+  Main: { tab?: TabId } | undefined;
   DayDetail: DayDetailParams;
   RequestDetail: { id: string; type: string };
   TeamMember: { employee: string; name?: string };
+  TaskDetail: { id: string };
+  Notifications: undefined;
   About: undefined;
 };
 
-export type TabId = "notifications" | "requests" | "attendance" | "calendar" | "more";
+export type TabId = "tasks" | "requests" | "attendance" | "calendar" | "more";
 
 /** Sub-views opened from the More tab (same stack as main tabs; no new routes). */
 export type MoreStackView =

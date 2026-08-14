@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { I18nManager, StatusBar, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useRoute, type RouteProp } from "@react-navigation/native";
 import {
   Ionicons,
   NavCalendarIcon,
@@ -15,7 +16,7 @@ import { ProfileScreen } from "../screens/ProfileScreen";
 import { RequestsHubScreen } from "../screens/RequestsHubScreen";
 import { SettingsScreen } from "../screens/SettingsScreen";
 import { BusinessCardScreen } from "../screens/BusinessCardScreen";
-import { NotificationsScreen } from "../screens/NotificationsScreen";
+import { TasksScreen } from "../screens/TasksScreen";
 import { MyBalancesScreen } from "../screens/MyBalancesScreen";
 import { MyTeamScreen } from "../screens/MyTeamScreen";
 import { MonthlyStatementScreen } from "../screens/MonthlyStatementScreen";
@@ -23,7 +24,7 @@ import { useAppLocale } from "../i18n/LocaleContext";
 import { i18n } from "../i18n";
 import { colors } from "../theme/colors";
 import { floatingTabBarBottomInset } from "../theme/shadows";
-import { MoreStackView, TabId } from "../types/navigation";
+import { MoreStackView, RootStackParamList, TabId } from "../types/navigation";
 
 interface TabConfig {
   id: TabId;
@@ -34,12 +35,12 @@ interface TabConfig {
 
 const TABS: TabConfig[] = [
   {
-    id: "notifications",
-    labelKey: "notificationsTab",
-    titleKey: "notificationsTab",
+    id: "tasks",
+    labelKey: "tasksTab",
+    titleKey: "tasksTab",
     icon: (a) => (
       <Ionicons
-        name={a ? "notifications" : "notifications-outline"}
+        name={a ? "checkbox" : "checkbox-outline"}
         size={22}
         color={a ? colors.successDark : colors.textMuted}
       />
@@ -79,10 +80,20 @@ const TABS: TabConfig[] = [
 
 export function TabNavigator() {
   const { locale } = useAppLocale();
+  const route = useRoute<RouteProp<RootStackParamList, "Main">>();
   const [activeTab, setActiveTab] = useState<TabId>("attendance");
   const [moreStackView, setMoreStackView] = useState<MoreStackView | null>(null);
   const insets = useSafeAreaInsets();
   const isAr = locale === "ar";
+
+  // Deep-link into a specific tab (e.g. from a notification).
+  const requestedTab = route.params?.tab;
+  useEffect(() => {
+    if (requestedTab) {
+      setMoreStackView(null);
+      setActiveTab(requestedTab);
+    }
+  }, [requestedTab]);
   const tabRowDir: "row" | "row-reverse" = isAr
     ? I18nManager.isRTL
       ? "row"
@@ -165,10 +176,6 @@ export function TabNavigator() {
             <View style={styles.screen}>
               <SettingsScreen />
             </View>
-          ) : moreStackView === "notifications" ? (
-            <View style={styles.screen}>
-              <NotificationsScreen />
-            </View>
           ) : moreStackView === "balances" ? (
             <View style={styles.screen}>
               <MyBalancesScreen />
@@ -187,8 +194,8 @@ export function TabNavigator() {
             </View>
           ) : (
             <>
-              <View style={[styles.screen, { display: activeTab === "notifications" ? "flex" : "none" }]}>
-                <NotificationsScreen />
+              <View style={[styles.screen, { display: activeTab === "tasks" ? "flex" : "none" }]}>
+                <TasksScreen />
               </View>
               <View style={[styles.screen, { display: activeTab === "requests" ? "flex" : "none" }]}>
                 <RequestsHubScreen />

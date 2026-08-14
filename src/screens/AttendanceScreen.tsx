@@ -1,10 +1,13 @@
 import * as Location from "expo-location";
 import React, { useEffect, useRef, useState } from "react";
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { HomeAnnouncements } from "../components/home/HomeAnnouncements";
 import { HomeHeroBand } from "../components/home/HomeHeroBand";
 import { HomeTodaySections } from "../components/home/HomeTodaySections";
 import { EmployeeAvatar } from "../components/ui/EmployeeAvatar";
+import { Ionicons } from "../components/ui/NavIcons";
 import { ScreenShell } from "../components/ui/ScreenShell";
 import { useAuth } from "../context/AuthContext";
 import { useAppLocale } from "../i18n/LocaleContext";
@@ -21,7 +24,10 @@ import { hapticError, hapticSuccess } from "../utils/haptics";
 import { AdatAlert, AdatAlertConfig } from "../components/ui/AdatAlert";
 import { resolveAttendanceError } from "../utils/attendanceErrors";
 import { AssignedLocation, EmployeeTask, EstablishmentAnnouncement } from "../types/api";
+import type { RootStackParamList } from "../types/navigation";
 import { GeofenceView } from "../components/attendance/GeofenceView";
+import { notificationsService } from "../services/notificationsService";
+import { applyReadState, unreadCount } from "../utils/notificationReads";
 
 const DEBUG_ATTENDANCE_LOCATION = false;
 const DEBUG_ATTENDANCE_DIAG = false;
@@ -113,6 +119,26 @@ export function AttendanceScreen({
   const [assignedLocation, setAssignedLocation] = useState<AssignedLocation | null>(null);
   const [userCoords, setUserCoords] = useState<{ latitude: number; longitude: number } | null>(null);
   const [alertConfig, setAlertConfig] = useState<AdatAlertConfig | null>(null);
+  const [unreadNotifCount, setUnreadNotifCount] = useState(0);
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  // Notification unread badge — refreshed when the home tab regains focus.
+  useFocusEffect(
+    React.useCallback(() => {
+      let active = true;
+      void (async () => {
+        try {
+          const rows = await applyReadState(await notificationsService.getNotifications());
+          if (active) setUnreadNotifCount(unreadCount(rows));
+        } catch {
+          /* ignore */
+        }
+      })();
+      return () => {
+        active = false;
+      };
+    }, [])
+  );
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -487,33 +513,50 @@ export function AttendanceScreen({
         paddingBottom: floatingTabBarBottomInset + 16,
       }}
       headerContent={
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={i18n.t("profileTab")}
-          onPress={onGoProfile}
-          hitSlop={8}
-          style={({ pressed }) => [
-            styles.identityChip,
-            isAr ? styles.identityRowAr : styles.identityRowEn,
-            pressed && styles.identityChipPressed,
-          ]}
-        >
-          <View style={[styles.identityText, { alignItems: isAr ? "flex-end" : "flex-start" }]}>
-            {displayName ? (
-              <Text style={[styles.identityName, isAr && styles.noTrack]} numberOfLines={1}>
-                {displayName}
-              </Text>
+        <View style={[styles.headerRowWrap, isAr && styles.identityRowAr]}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={i18n.t("profileTab")}
+            onPress={onGoProfile}
+            hitSlop={8}
+            style={({ pressed }) => [
+              styles.identityChip,
+              styles.identityChipFlex,
+              isAr ? styles.identityRowAr : styles.identityRowEn,
+              pressed && styles.identityChipPressed,
+            ]}
+          >
+            <View style={[styles.identityText, { alignItems: isAr ? "flex-end" : "flex-start" }]}>
+              {displayName ? (
+                <Text style={[styles.identityName, isAr && styles.noTrack]} numberOfLines={1}>
+                  {displayName}
+                </Text>
+              ) : null}
+              {companyLabel ? (
+                <Text style={[styles.identityCompany, isAr && styles.noTrack]} numberOfLines={1}>
+                  {companyLabel}
+                </Text>
+              ) : null}
+            </View>
+            <View style={styles.avatarRingHeader}>
+              <EmployeeAvatar photoUrl={user?.employeePhotoUrl} initialSource={initialSource} size={34} />
+            </View>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={i18n.t("notifTitle")}
+            onPress={() => navigation.navigate("Notifications")}
+            hitSlop={8}
+            style={({ pressed }) => [styles.bellBtn, pressed && styles.identityChipPressed]}
+          >
+            <Ionicons name="notifications-outline" size={22} color={colors.ink} />
+            {unreadNotifCount > 0 ? (
+              <View style={styles.bellBadge}>
+                <Text style={styles.bellBadgeText}>{unreadNotifCount > 9 ? "9+" : String(unreadNotifCount)}</Text>
+              </View>
             ) : null}
-            {companyLabel ? (
-              <Text style={[styles.identityCompany, isAr && styles.noTrack]} numberOfLines={1}>
-                {companyLabel}
-              </Text>
-            ) : null}
-          </View>
-          <View style={styles.avatarRingHeader}>
-            <EmployeeAvatar photoUrl={user?.employeePhotoUrl} initialSource={initialSource} size={34} />
-          </View>
-        </Pressable>
+          </Pressable>
+        </View>
       }
     >
       <HomeHeroBand
@@ -557,6 +600,31 @@ const styles = StyleSheet.create({
   identityRowEn: { flexDirection: "row" },
   identityRowAr: { flexDirection: "row-reverse" },
   identityChipPressed: { opacity: 0.9, transform: [{ scale: 0.995 }] },
+  headerRowWrap: { flexDirection: "row", alignItems: "center", gap: 10, width: "100%" },
+  identityChipFlex: { flex: 1, width: undefined },
+  bellBtn: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  bellBadge: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    paddingHorizontal: 3,
+    backgroundColor: colors.danger,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  bellBadgeText: { color: colors.white, fontSize: 10, fontWeight: "800", fontVariant: ["tabular-nums"] },
   identityChip: {
     width: "100%",
     borderRadius: 14,

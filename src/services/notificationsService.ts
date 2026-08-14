@@ -1,11 +1,21 @@
 import type { AxiosResponse } from "axios";
 import { http } from "./http";
 
+/**
+ * Unified notification model. `read` is currently derived on the client (see
+ * utils/notificationReads) because the BFF notifications are computed each request
+ * rather than stored; the shape already carries `href`/`createdAt`/`read` so a future
+ * persistent, push-capable backend can populate them without a client rewrite.
+ * Tenant/employee scoping is implicit — the endpoint is session-scoped.
+ */
 export interface AppNotification {
   id: string;
   type: string;
   title: string;
   description: string;
+  href: string | null;
+  createdAt: string | null;
+  read: boolean;
 }
 
 export const notificationsService = {
@@ -22,6 +32,9 @@ export const notificationsService = {
           type: n.type == null ? "info" : String(n.type),
           title,
           description: n.description == null ? "" : String(n.description).trim(),
+          href: n.href == null ? null : String(n.href).trim() || null,
+          createdAt: n.createdAt == null ? null : String(n.createdAt),
+          read: false,
         } as AppNotification;
       })
       .filter((x): x is AppNotification => x !== null);

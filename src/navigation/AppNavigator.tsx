@@ -8,6 +8,8 @@ import { TabNavigator } from "./TabNavigator";
 import { DayDetailScreen } from "../screens/DayDetailScreen";
 import { RequestDetailScreen } from "../screens/RequestDetailScreen";
 import { TeamMemberScreen } from "../screens/TeamMemberScreen";
+import { TaskDetailScreen } from "../screens/TaskDetailScreen";
+import { NotificationsScreen } from "../screens/NotificationsScreen";
 import { AboutScreen } from "../screens/AboutScreen";
 import { colors } from "../theme/colors";
 import { RootStackParamList } from "../types/navigation";
@@ -46,6 +48,8 @@ export function AppNavigator() {
           <Stack.Screen name="DayDetail" component={DayDetailScreen} />
           <Stack.Screen name="RequestDetail" component={RequestDetailScreen} />
           <Stack.Screen name="TeamMember" component={TeamMemberScreen} />
+          <Stack.Screen name="TaskDetail" component={TaskDetailScreen} />
+          <Stack.Screen name="Notifications" component={NotificationsScreen} />
           <Stack.Screen name="About" component={AboutScreen} options={{ presentation: "modal" }} />
         </>
       )}
