@@ -13,7 +13,7 @@ import { useAuth } from "../context/AuthContext";
 import { useAppLocale } from "../i18n/LocaleContext";
 import { i18n } from "../i18n";
 import { announcementService } from "../services/announcementService";
-import { attendanceService } from "../services/attendanceService";
+import { attendanceService, dateKeyInTimeZone, RIYADH_TZ } from "../services/attendanceService";
 import { getApiErrorMessage } from "../services/http";
 import { taskService } from "../services/taskService";
 import { colors } from "../theme/colors";
@@ -120,7 +120,35 @@ export function AttendanceScreen({
   const [userCoords, setUserCoords] = useState<{ latitude: number; longitude: number } | null>(null);
   const [alertConfig, setAlertConfig] = useState<AdatAlertConfig | null>(null);
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
+  const [serverInDone, setServerInDone] = useState(false);
+  const [serverOutDone, setServerOutDone] = useState(false);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  // Authoritative today check-in/out state from the server (survives app restarts).
+  useFocusEffect(
+    React.useCallback(() => {
+      let active = true;
+      void (async () => {
+        try {
+          const d = new Date();
+          const checkins = await attendanceService.getEmployeeCheckinsForMonth(d.getFullYear(), d.getMonth() + 1);
+          const todayR = dateKeyInTimeZone(d.toISOString(), RIYADH_TZ);
+          const todays = checkins
+            .filter((r) => dateKeyInTimeZone(r.time, RIYADH_TZ) === todayR)
+            .sort((a, b) => String(a.time).localeCompare(String(b.time)));
+          if (!active) return;
+          setServerInDone(todays.some((r) => String(r.log_type ?? "").toUpperCase() === "IN"));
+          const lastType = todays.length ? String(todays[todays.length - 1].log_type ?? "").toUpperCase() : "";
+          setServerOutDone(lastType === "OUT");
+        } catch {
+          /* ignore — falls back to local state */
+        }
+      })();
+      return () => {
+        active = false;
+      };
+    }, [])
+  );
 
   // Notification unread badge — refreshed when the home tab regains focus.
   useFocusEffect(
@@ -475,8 +503,11 @@ export function AttendanceScreen({
   const dateStr = formatMobileDate(now);
   const todayKey = localDayKey(now);
 
-  const checkedInToday = lastSuccessfulInDayKey === todayKey;
-  const checkedOutToday = lastSuccessfulOutDayKey === todayKey;
+  // Merge local (this-session) success with the server's today check-ins so an open
+  // check-in from a previous app launch shows on the home as "check out" — the user
+  // no longer discovers it via an error.
+  const checkedInToday = serverInDone || lastSuccessfulInDayKey === todayKey;
+  const checkedOutToday = serverOutDone || lastSuccessfulOutDayKey === todayKey;
 
   let fingerprintPhase: "checkIn" | "checkOut" | "completed";
   if (checkedInToday && checkedOutToday) {
