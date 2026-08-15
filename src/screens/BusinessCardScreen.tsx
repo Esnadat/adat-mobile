@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import QRCode from "react-native-qrcode-svg";
 import { EmployeeAvatar } from "../components/ui/EmployeeAvatar";
@@ -8,6 +8,8 @@ import { useAuth } from "../context/AuthContext";
 import { useAppLocale } from "../i18n/LocaleContext";
 import { colors } from "../theme/colors";
 import { floatingTabBarBottomInset } from "../theme/shadows";
+import { formatMobileDate, formatMobileTimeFromDate } from "../utils/mobileDateFormat";
+import { formatYyyyMmDdForDisplay } from "../utils/mobileDateFormat";
 
 const ESNADAT_NAME = "Esnadat";
 const ESNADAT_CODE = "1001";
@@ -122,8 +124,14 @@ export function BusinessCardScreen() {
   const { user } = useAuth();
   const { locale } = useAppLocale();
   const [logoLoadFailed, setLogoLoadFailed] = useState(false);
+  const [now, setNow] = useState(() => new Date());
   const isAr = locale === "ar";
   const align = isAr ? "right" : "left";
+
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 20000);
+    return () => clearInterval(t);
+  }, []);
 
   const name = firstNonEmpty(user?.name, user?.email);
   const designation = firstNonEmpty(user?.designation);
@@ -133,6 +141,7 @@ export function BusinessCardScreen() {
   const showPersonalEmail = personalEmail && personalEmail.toLowerCase() !== workEmail.toLowerCase();
   const mobile = firstNonEmpty(user?.mobile);
   const employeeId = firstNonEmpty(user?.id);
+  const joining = firstNonEmpty(user?.dateOfJoining);
   const statusValue = firstNonEmpty(user?.status);
   const statusBadge = mapStatusBadge(statusValue, isAr);
   const company = resolveCompany(user);
@@ -160,9 +169,13 @@ export function BusinessCardScreen() {
         { icon: "call-outline" as const, value: mobile },
         { icon: "person-outline" as const, value: employeeId ? `ID ${employeeId}` : "" },
         { icon: "business-outline" as const, value: company.code ? `Code ${company.code}` : "" },
+        {
+          icon: "calendar-outline" as const,
+          value: joining ? `${isAr ? "التعيين" : "Joined"} ${formatYyyyMmDdForDisplay(joining) ?? ""}` : "",
+        },
         { icon: "at-outline" as const, value: showPersonalEmail ? personalEmail : "" },
       ].filter((row) => Boolean(row.value)),
-    [workEmail, mobile, employeeId, company.code, showPersonalEmail, personalEmail]
+    [workEmail, mobile, employeeId, company.code, showPersonalEmail, personalEmail, joining, isAr]
   );
 
   return (
@@ -203,6 +216,10 @@ export function BusinessCardScreen() {
           {name ? <Text style={[styles.arName, { textAlign: align }]}>{name}</Text> : null}
           {designation ? <Text style={[styles.arDesignation, { textAlign: align }]}>{designation}</Text> : null}
           {department ? <Text style={[styles.arDepartment, { textAlign: align }]}>{department}</Text> : null}
+          <View style={[styles.dateTimeStrip, isAr && styles.rowReverse]}>
+            <Ionicons name="time-outline" size={13} color={colors.textMuted} />
+            <Text style={styles.dateTimeText}>{`${formatMobileDate(now)} · ${formatMobileTimeFromDate(now, locale)}`}</Text>
+          </View>
         </View>
         <View style={[styles.midRow, isAr && styles.rowReverse]}>
           <View style={styles.qrArea}>
@@ -323,6 +340,8 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     lineHeight: 18,
   },
+  dateTimeStrip: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 10 },
+  dateTimeText: { fontSize: 12, fontWeight: "700", color: colors.textMuted, fontVariant: ["tabular-nums"] },
   midRow: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", gap: 12, marginBottom: 14 },
   qrArea: { alignItems: "center", justifyContent: "center" },
   qrBox: {
