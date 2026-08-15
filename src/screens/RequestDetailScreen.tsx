@@ -6,6 +6,9 @@ import { StatusPill, StatusPillTone } from "../components/ui/StatusPill";
 import { useAppLocale } from "../i18n/LocaleContext";
 import { i18n } from "../i18n";
 import { requestService } from "../services/requestService";
+import { attachmentService, AttachmentPolicy, RequestAttachment } from "../services/attachmentService";
+import { AdatAlert, AdatAlertConfig } from "../components/ui/AdatAlert";
+import { Ionicons } from "../components/ui/NavIcons";
 import { EmployeeRequest, RequestStatus, RequestType } from "../types/api";
 import { RootStackParamList } from "../types/navigation";
 import { colors } from "../theme/colors";
@@ -57,6 +60,60 @@ export function RequestDetailScreen() {
   const [item, setItem] = useState<EmployeeRequest | null>(null);
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
+  const [policy, setPolicy] = useState<AttachmentPolicy | null>(null);
+  const [attachments, setAttachments] = useState<RequestAttachment[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<AdatAlertConfig | null>(null);
+
+  const attachKind = type === "leave" || type === "permission" ? type : null;
+
+  const loadAttachments = useCallback(async () => {
+    if (!attachKind) return;
+    const [pol, list] = await Promise.all([
+      attachmentService.getPolicy(attachKind),
+      attachmentService.list(attachKind, id),
+    ]);
+    setPolicy(pol);
+    setAttachments(list);
+  }, [attachKind, id]);
+
+  useEffect(() => {
+    void loadAttachments();
+  }, [loadAttachments]);
+
+  const onAddAttachment = async () => {
+    if (!attachKind || !policy) return;
+    if (attachments.length >= policy.maxFiles) {
+      setAlertConfig({ tone: "info", title: i18n.t("error"), message: i18n.t("attachMaxFiles") });
+      return;
+    }
+    try {
+      const file = await attachmentService.pickDocument();
+      if (!file) return;
+      if (file.size > policy.maxSizeBytes) {
+        setAlertConfig({ tone: "danger", title: i18n.t("error"), message: i18n.t("attachTooLarge") });
+        return;
+      }
+      if (policy.allowedMimeTypes.length && !policy.allowedMimeTypes.includes(file.mimeType)) {
+        setAlertConfig({ tone: "danger", title: i18n.t("error"), message: i18n.t("attachBadType") });
+        return;
+      }
+      setUploading(true);
+      await attachmentService.upload(attachKind, id, file);
+      await loadAttachments();
+    } catch {
+      setAlertConfig({ tone: "danger", title: i18n.t("error"), message: i18n.t("attachUploadFailed") });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const onRemoveAttachment = (attId: string) => {
+    attachmentService
+      .remove(attId)
+      .then(() => loadAttachments())
+      .catch(() => setAlertConfig({ tone: "danger", title: i18n.t("error"), message: i18n.t("attachUploadFailed") }));
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -162,6 +219,50 @@ export function RequestDetailScreen() {
             <Row label={i18n.t("requestId")} value={item.id} isAr={isAr} />
           </View>
 
+          {attachKind && policy && policy.mode !== "hidden" ? (
+            <View style={styles.card}>
+              <View style={[styles.headerRow, isAr && styles.rowReverse]}>
+                <Text style={[styles.typeText, { fontSize: 15, textAlign: align }]}>{i18n.t("attachTitle")}</Text>
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={uploading || attachments.length >= policy.maxFiles}
+                  onPress={() => void onAddAttachment()}
+                  style={({ pressed }) => [styles.addBtn, pressed && styles.pressed, (uploading || attachments.length >= policy.maxFiles) && styles.disabled]}
+                >
+                  {uploading ? (
+                    <ActivityIndicator size="small" color={colors.primaryDark} />
+                  ) : (
+                    <>
+                      <Ionicons name="add" size={16} color={colors.primaryDark} />
+                      <Text style={styles.addBtnText}>{i18n.t("attachAdd")}</Text>
+                    </>
+                  )}
+                </Pressable>
+              </View>
+              <Text style={[styles.attachHint, { textAlign: align }]}>
+                {`${i18n.t("attachHint")} · ${i18n.t("attachTypes")} · ${Math.round(policy.maxSizeBytes / (1024 * 1024))}MB · ${attachments.length}/${policy.maxFiles}`}
+              </Text>
+              {attachments.length === 0 ? (
+                <Text style={[styles.attachEmpty, { textAlign: align }]}>{i18n.t("attachNone")}</Text>
+              ) : (
+                attachments.map((a, i) => (
+                  <View key={a.id} style={[styles.attachRow, isAr && styles.rowReverse, i > 0 && styles.attachDivider]}>
+                    <Ionicons name="document-attach-outline" size={18} color={colors.textSecondary} />
+                    <Text style={[styles.attachName, { textAlign: align }]} numberOfLines={1}>
+                      {a.file_name}
+                    </Text>
+                    <Text style={styles.attachSize}>{`${Math.max(1, Math.round(a.size_bytes / 1024))}KB`}</Text>
+                    {canCancel ? (
+                      <Pressable accessibilityRole="button" hitSlop={8} onPress={() => onRemoveAttachment(a.id)} style={({ pressed }) => pressed && styles.pressed}>
+                        <Ionicons name="trash-outline" size={17} color={colors.danger} />
+                      </Pressable>
+                    ) : null}
+                  </View>
+                ))
+              )}
+            </View>
+          ) : null}
+
           <Text style={[styles.note, { textAlign: align }]}>{i18n.t("requestDetailApprovalNote")}</Text>
 
           {canCancel ? (
@@ -179,6 +280,7 @@ export function RequestDetailScreen() {
           ) : null}
         </>
       )}
+      <AdatAlert config={alertConfig} onClose={() => setAlertConfig(null)} />
     </DetailShell>
   );
 }
@@ -225,4 +327,12 @@ const styles = StyleSheet.create({
   cancelText: { fontSize: 15, fontWeight: "800", color: colors.danger },
   pressed: { opacity: 0.85 },
   disabled: { opacity: 0.6 },
+  addBtn: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: colors.primaryLight, borderRadius: radius.pill, paddingHorizontal: 12, paddingVertical: 7, minHeight: 34 },
+  addBtnText: { fontSize: 13, fontWeight: "800", color: colors.primaryDark },
+  attachHint: { fontSize: 11.5, fontWeight: "600", color: colors.textMuted, marginTop: 8, marginBottom: 4, fontVariant: ["tabular-nums"] },
+  attachEmpty: { fontSize: 13, fontWeight: "600", color: colors.textMuted, paddingVertical: 8 },
+  attachRow: { flexDirection: "row", alignItems: "center", gap: spacing.md, paddingVertical: 10 },
+  attachDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.divider },
+  attachName: { flex: 1, fontSize: 13.5, fontWeight: "700", color: colors.ink },
+  attachSize: { fontSize: 11.5, fontWeight: "700", color: colors.textMuted, fontVariant: ["tabular-nums"] },
 });
