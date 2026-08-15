@@ -1,15 +1,20 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
+  Pressable,
   StyleSheet,
   Text,
   View,
 } from "react-native";
 import { EmployeeAvatar } from "../components/ui/EmployeeAvatar";
+import { Ionicons } from "../components/ui/NavIcons";
+import { AdatAlert, AdatAlertConfig } from "../components/ui/AdatAlert";
 import { InfoRow } from "../components/ui/InfoRow";
 import { PremiumCard } from "../components/ui/PremiumCard";
 import { ScreenShell } from "../components/ui/ScreenShell";
 import { useAuth } from "../context/AuthContext";
+import { pickAndCompressPhoto, uploadEmployeePhoto } from "../services/photoService";
 import { useAppLocale } from "../i18n/LocaleContext";
 import { i18n } from "../i18n";
 import { profileService } from "../services/profileService";
@@ -48,7 +53,35 @@ function normalizeDisplayValue(value: unknown): string {
 }
 
 export function ProfileScreen() {
-  const { user } = useAuth();
+  const { user, updatePhotoUrl } = useAuth();
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<AdatAlertConfig | null>(null);
+
+  const runPhotoChange = async (source: "gallery" | "camera") => {
+    try {
+      const picked = await pickAndCompressPhoto(source);
+      if (!picked) return; // cancelled
+      if ("denied" in picked) {
+        setAlertConfig({ tone: "danger", title: i18n.t("error"), message: i18n.t("photoPermissionDenied") });
+        return;
+      }
+      setPhotoUploading(true);
+      const url = await uploadEmployeePhoto(picked.uri);
+      updatePhotoUrl(url);
+    } catch {
+      setAlertConfig({ tone: "danger", title: i18n.t("error"), message: i18n.t("photoUploadFailed") });
+    } finally {
+      setPhotoUploading(false);
+    }
+  };
+
+  const onChangePhoto = () => {
+    Alert.alert(i18n.t("photoChangeTitle"), undefined, [
+      { text: i18n.t("photoFromCamera"), onPress: () => void runPhotoChange("camera") },
+      { text: i18n.t("photoFromGallery"), onPress: () => void runPhotoChange("gallery") },
+      { text: i18n.t("cancelRequestConfirmNo"), style: "cancel" },
+    ]);
+  };
   const { locale } = useAppLocale();
   const isAr = locale === "ar";
   const align = isAr ? "right" : "left";
@@ -161,9 +194,23 @@ export function ProfileScreen() {
       <PremiumCard hero style={styles.businessCard}>
         <View style={styles.cardAccent} />
         <View style={[styles.businessHead, isAr ? styles.rowReverse : styles.rowNormal]}>
-          <View style={styles.avatarRing}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={i18n.t("photoChangeTitle")}
+            onPress={onChangePhoto}
+            disabled={photoUploading}
+            style={styles.avatarRing}
+          >
             <EmployeeAvatar photoUrl={avatarUrl} initialSource={initialSource} size={78} />
-          </View>
+            <View style={styles.avatarCamBadge}>
+              <Ionicons name="camera" size={14} color={colors.white} />
+            </View>
+            {photoUploading ? (
+              <View style={styles.avatarLoading}>
+                <ActivityIndicator size="small" color={colors.white} />
+              </View>
+            ) : null}
+          </Pressable>
           <View style={[styles.identityTextCol, { alignItems: isAr ? "flex-end" : "flex-start" }]}>
             {displayName ? <Text style={[styles.heroName, isAr && styles.noTrack, { textAlign: align }]}>{displayName}</Text> : null}
             {displayCompany ? (
@@ -228,6 +275,7 @@ export function ProfileScreen() {
           </>
         ) : null}
       </PremiumCard>
+      <AdatAlert config={alertConfig} onClose={() => setAlertConfig(null)} />
     </ScreenShell>
   );
 }
@@ -259,7 +307,27 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     borderWidth: 2,
     borderColor: "rgba(13, 138, 78, 0.26)",
-    overflow: "hidden",
+    overflow: "visible",
+  },
+  avatarCamBadge: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: colors.primary,
+    borderWidth: 2,
+    borderColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarLoading: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 40,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   heroName: {
     fontSize: 19,

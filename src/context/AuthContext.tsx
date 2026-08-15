@@ -14,6 +14,8 @@ interface AuthContextValue {
   sendOtp: (payload: LoginOtpPayload) => Promise<void>;
   verifyOtp: (payload: VerifyOtpPayload) => Promise<void>;
   logout: () => Promise<void>;
+  /** Update the session photo URL after a successful upload (single source for header/card/profile). */
+  updatePhotoUrl: (url: string) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -91,6 +93,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setAuthToken(null);
         setPortalSid(null);
         await AsyncStorage.multiRemove([TOKEN_KEY, SID_KEY, USER_KEY]);
+      },
+      updatePhotoUrl: (url: string) => {
+        setUser((prev) => {
+          if (!prev) return prev;
+          const next = { ...prev, employeePhotoUrl: url };
+          void AsyncStorage.setItem(USER_KEY, JSON.stringify(next));
+          return next;
+        });
       },
     }),
     [user, loading]
