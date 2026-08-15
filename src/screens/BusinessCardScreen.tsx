@@ -10,6 +10,9 @@ import { colors } from "../theme/colors";
 import { floatingTabBarBottomInset } from "../theme/shadows";
 import { formatMobileDate, formatMobileTimeFromDate } from "../utils/mobileDateFormat";
 import { formatYyyyMmDdForDisplay } from "../utils/mobileDateFormat";
+import { ENV } from "../config/env";
+
+const API_BASE = ENV.apiBaseUrl.replace(/\/+$/, "");
 
 const ESNADAT_NAME = "Esnadat";
 const ESNADAT_CODE = "1001";
@@ -124,6 +127,7 @@ export function BusinessCardScreen() {
   const { user } = useAuth();
   const { locale } = useAppLocale();
   const [logoLoadFailed, setLogoLoadFailed] = useState(false);
+  const [companyLogoFailed, setCompanyLogoFailed] = useState(false);
   const [now, setNow] = useState(() => new Date());
   const isAr = locale === "ar";
   const align = isAr ? "right" : "left";
@@ -190,7 +194,16 @@ export function BusinessCardScreen() {
         <View style={styles.cardTopAccent} />
         <View style={[styles.topRow, isAr && styles.rowReverse]}>
           <View style={styles.brandWrap}>
-            {company.isEsnadat && !logoLoadFailed ? (
+            {!companyLogoFailed ? (
+              // Employee's company logo (session-scoped BFF proxy). Falls back cleanly
+              // to the Esnadat wordmark / company name if none is uploaded (404 → onError).
+              <Image
+                source={{ uri: `${API_BASE}/api/company/logo` }}
+                style={styles.brandWordmark}
+                resizeMode="contain"
+                onError={() => setCompanyLogoFailed(true)}
+              />
+            ) : company.isEsnadat && !logoLoadFailed ? (
               <Image
                 source={require("../../assets/branding/esnadat-wordmark.png")}
                 style={styles.brandWordmark}
