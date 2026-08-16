@@ -1,6 +1,7 @@
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import * as Device from "expo-device";
 import { LargeButton } from "../components/LargeButton";
 import { RequestSelectField, type RequestSelectOption } from "../components/requests/RequestSelectField";
 import { Ionicons } from "../components/ui/NavIcons";
@@ -79,6 +80,11 @@ export function RequestsScreen({ onViewMyRequests }: RequestsScreenProps = {}) {
   const [supportCategory, setSupportCategory] = useState("technical");
   const [supportPriority, setSupportPriority] = useState("medium");
   const [supportDescription, setSupportDescription] = useState("");
+  // Technical-support device info, auto-filled from the device but editable.
+  const [supportDevice, setSupportDevice] = useState(() =>
+    [Device.manufacturer, Device.modelName].filter(Boolean).join(" ") || Device.deviceName || ""
+  );
+  const [supportOs, setSupportOs] = useState(() => `${Platform.OS === "ios" ? "iOS" : "Android"} ${String(Platform.Version)}`);
 
   const [loading, setLoading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -336,6 +342,10 @@ export function RequestsScreen({ onViewMyRequests }: RequestsScreenProps = {}) {
             description: supportDescription.trim(),
             category: supportCategory.trim(),
             priority: supportPriority.trim(),
+            deviceType:
+              supportCategory.trim() === "technical"
+                ? [supportDevice.trim(), supportOs.trim()].filter(Boolean).join(" · ")
+                : undefined,
           },
           { idempotencyKey }
         );
@@ -623,6 +633,28 @@ export function RequestsScreen({ onViewMyRequests }: RequestsScreenProps = {}) {
                 placeholder={i18n.t("tapToSelect")}
                 isAr={isAr}
               />
+              {supportCategory === "technical" ? (
+                <>
+                  <FieldRow label={i18n.t("supportDeviceLabel")} isAr={isAr} iconName="phone-portrait-outline">
+                    <TextInput
+                      style={[styles.input, isAr && styles.inputRtl]}
+                      placeholder={i18n.t("supportDeviceLabel")}
+                      placeholderTextColor={colors.muted}
+                      value={supportDevice}
+                      onChangeText={setSupportDevice}
+                    />
+                  </FieldRow>
+                  <FieldRow label={i18n.t("supportOsLabel")} isAr={isAr} iconName="hardware-chip-outline">
+                    <TextInput
+                      style={[styles.input, isAr && styles.inputRtl]}
+                      placeholder={i18n.t("supportOsLabel")}
+                      placeholderTextColor={colors.muted}
+                      value={supportOs}
+                      onChangeText={setSupportOs}
+                    />
+                  </FieldRow>
+                </>
+              ) : null}
               <FieldRow label={i18n.t("supportDescription")} isAr={isAr} iconName="create-outline">
                 <TextInput
                   style={[styles.input, styles.textArea, isAr && styles.inputRtl]}

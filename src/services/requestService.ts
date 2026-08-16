@@ -269,16 +269,18 @@ export const requestService = {
       description: string;
       category: string;
       priority: string;
+      deviceType?: string;
     },
     opts?: { idempotencyKey?: string }
   ) {
     const url = "/api/support/tickets";
-    const body = {
+    const body: { title: string; description: string; category: string; priority: string; device_type?: string } = {
       title: payload.title.trim(),
       description: payload.description.trim(),
       category: payload.category.trim(),
       priority: payload.priority.trim(),
     };
+    if (payload.deviceType && payload.deviceType.trim()) body.device_type = payload.deviceType.trim();
     logRequestStart(url, body);
     try {
       const response = await http.post(url, body, idempotencyConfig(opts));
