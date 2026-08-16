@@ -59,6 +59,7 @@ export function RequestDetailScreen() {
 
   const [item, setItem] = useState<EmployeeRequest | null>(null);
   const [loading, setLoading] = useState(true);
+  const [withdrawing, setWithdrawing] = useState(false);
   const [policy, setPolicy] = useState<AttachmentPolicy | null>(null);
   const [attachments, setAttachments] = useState<RequestAttachment[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -132,10 +133,35 @@ export function RequestDetailScreen() {
     void load();
   }, [load]);
 
-  // The direct "cancel request" button was removed in favour of the approval-gated
-  // leave-cancellation flow. `canOwnerEdit` still gates owner-only actions (e.g.
-  // removing an attachment while the request is still pending).
+  // Owner-only actions on a still-pending request: withdrawing it (removes the
+  // unapproved draft — distinct from the approval-gated leave-cancellation flow)
+  // and removing an attachment.
   const canOwnerEdit = item?.status === "pending" && (item.type === "leave" || item.type === "permission");
+
+  const onWithdraw = () => {
+    if (!item) return;
+    Alert.alert(i18n.t("withdrawConfirmTitle"), i18n.t("withdrawConfirmBody"), [
+      { text: i18n.t("withdrawConfirmNo"), style: "cancel" },
+      {
+        text: i18n.t("withdrawConfirmYes"),
+        style: "destructive",
+        onPress: () => {
+          setWithdrawing(true);
+          requestService
+            .cancelRequest(item.id, item.type)
+            .then(() => {
+              hapticSuccess();
+              navigation.goBack();
+            })
+            .catch(() => {
+              hapticError();
+              Alert.alert(i18n.t("withdrawError"));
+            })
+            .finally(() => setWithdrawing(false));
+        },
+      },
+    ]);
+  };
 
   return (
     <DetailShell
@@ -241,6 +267,20 @@ export function RequestDetailScreen() {
           ) : null}
 
           <Text style={[styles.note, { textAlign: align }]}>{i18n.t("requestDetailApprovalNote")}</Text>
+
+          {canOwnerEdit ? (
+            <Pressable
+              disabled={withdrawing}
+              onPress={onWithdraw}
+              style={({ pressed }) => [styles.cancelBtn, pressed && styles.pressed, withdrawing && styles.disabled]}
+            >
+              {withdrawing ? (
+                <ActivityIndicator size="small" color={colors.danger} />
+              ) : (
+                <Text style={styles.cancelText}>{i18n.t("withdrawRequest")}</Text>
+              )}
+            </Pressable>
+          ) : null}
         </>
       )}
       <AdatAlert config={alertConfig} onClose={() => setAlertConfig(null)} />
