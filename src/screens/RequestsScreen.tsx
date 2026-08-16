@@ -10,6 +10,7 @@ import { useAppLocale } from "../i18n/LocaleContext";
 import { i18n } from "../i18n";
 import { getApiErrorMessage } from "../services/http";
 import { requestService } from "../services/requestService";
+import { leaveCancellationService, type EligibleLeave } from "../services/leaveCancellationService";
 import { newIdempotencyKey } from "../utils/idempotency";
 import { colors } from "../theme/colors";
 import { floatingTabBarBottomInset, shadowCard } from "../theme/shadows";
@@ -20,11 +21,11 @@ import { formatMobileDate } from "../utils/mobileDateFormat";
 import { localizeLeaveTypeLabel } from "../utils/leaveTypeLabel";
 import { MyRequestsScreen } from "./MyRequestsScreen";
 
-type ActiveRequestType = "leave" | "permission" | "support";
+type ActiveRequestType = "leave" | "permission" | "support" | "cancel_leave";
 type PickerField = "from" | "to" | "permission" | null;
 type FlowTab = "new" | "mine";
 
-const ACTIVE_REQUEST_TYPES: ActiveRequestType[] = ["leave", "permission", "support"];
+const ACTIVE_REQUEST_TYPES: ActiveRequestType[] = ["leave", "permission", "cancel_leave", "support"];
 const COMING_SOON_TYPES: RequestType[] = ["missed_punch", "attendance_adjustment", "device_change", "overtime"];
 
 interface RequestsScreenProps {
@@ -44,6 +45,11 @@ function titleForType(type: RequestType): string {
   if (type === "attendance_adjustment") return i18n.t("requestTypeAttendanceAdjustment");
   if (type === "device_change") return i18n.t("requestTypeDeviceChange");
   return i18n.t("requestTypeOvertime");
+}
+
+function activeTypeTitle(type: ActiveRequestType): string {
+  if (type === "cancel_leave") return i18n.t("cancelLeaveTitle");
+  return titleForType(type);
 }
 
 function iconForType(type: RequestType) {
@@ -79,6 +85,12 @@ export function RequestsScreen({ onViewMyRequests }: RequestsScreenProps = {}) {
   const [supportCategory, setSupportCategory] = useState("technical");
   const [supportPriority, setSupportPriority] = useState("medium");
   const [supportDescription, setSupportDescription] = useState("");
+
+  // Cancel-leave: pick one of the employee's approved, not-yet-started leaves.
+  const [cancelLeaveOptions, setCancelLeaveOptions] = useState<EligibleLeave[]>([]);
+  const [cancelLeaveTarget, setCancelLeaveTarget] = useState("");
+  const [cancelLeaveLoading, setCancelLeaveLoading] = useState(false);
+  const [cancelLeaveLoaded, setCancelLeaveLoaded] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -116,6 +128,25 @@ export function RequestsScreen({ onViewMyRequests }: RequestsScreenProps = {}) {
       setSupportCategory("technical");
       setSupportPriority("medium");
       setSupportDescription("");
+    }
+
+    if (nextType !== "cancel_leave") {
+      setCancelLeaveTarget("");
+    }
+  };
+
+  const loadEligibleLeaves = async () => {
+    setCancelLeaveLoading(true);
+    try {
+      const rows = await leaveCancellationService.eligibleLeaves();
+      setCancelLeaveOptions(rows);
+      setCancelLeaveLoaded(true);
+      if (!rows.some((r) => r.leaveApplication === cancelLeaveTarget)) setCancelLeaveTarget("");
+    } catch {
+      setCancelLeaveOptions([]);
+      setCancelLeaveLoaded(true);
+    } finally {
+      setCancelLeaveLoading(false);
     }
   };
 
@@ -155,6 +186,7 @@ export function RequestsScreen({ onViewMyRequests }: RequestsScreenProps = {}) {
     setSupportCategory("technical");
     setSupportPriority("medium");
     setSupportDescription("");
+    setCancelLeaveTarget("");
     setSubmitError(null);
     setSubmittedName(null);
     setFlowTab("new");
@@ -197,6 +229,13 @@ export function RequestsScreen({ onViewMyRequests }: RequestsScreenProps = {}) {
       void loadLeaveTypes();
     }
   }, [flowTab, type, leaveTypesLoaded, leaveTypesLoading]);
+
+  // Refresh eligible leaves whenever the cancel-leave form opens (state changes over time).
+  useEffect(() => {
+    if (flowTab !== "new" || type !== "cancel_leave") return;
+    void loadEligibleLeaves();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flowTab, type]);
 
   useEffect(() => {
     if (flowTab !== "new" || type !== "leave") return;
@@ -300,6 +339,10 @@ export function RequestsScreen({ onViewMyRequests }: RequestsScreenProps = {}) {
       if (!supportDescription.trim()) return setSubmitError(i18n.t("valSupportDescription"));
     }
 
+    if (type === "cancel_leave") {
+      if (!cancelLeaveTarget.trim()) return setSubmitError(i18n.t("valCancelLeaveTarget"));
+    }
+
     setLoading(true);
     const idempotencyKey =
       idempotencyKeyRef.current ?? (idempotencyKeyRef.current = newIdempotencyKey());
@@ -341,6 +384,9 @@ export function RequestsScreen({ onViewMyRequests }: RequestsScreenProps = {}) {
         );
         const data = res?.data as { data?: { id?: string; name?: string } } | undefined;
         setSubmittedName(data?.data?.id || data?.data?.name || "");
+      } else if (type === "cancel_leave") {
+        const created = await leaveCancellationService.create(cancelLeaveTarget.trim(), reason.trim(), { idempotencyKey });
+        setSubmittedName(created.leaveApplication || "");
       }
       // Submission succeeded — drop the key so the next request gets a fresh one.
       idempotencyKeyRef.current = null;
@@ -454,7 +500,7 @@ export function RequestsScreen({ onViewMyRequests }: RequestsScreenProps = {}) {
                   handleTypeChange(requestType);
                 }}
               >
-                <Text style={[styles.typeChipText, selected ? styles.typeChipTextActive : undefined]}>{titleForType(requestType)}</Text>
+                <Text style={[styles.typeChipText, selected ? styles.typeChipTextActive : undefined]}>{activeTypeTitle(requestType)}</Text>
               </Pressable>
             );
           })}
@@ -587,6 +633,46 @@ export function RequestsScreen({ onViewMyRequests }: RequestsScreenProps = {}) {
                 <TextInput
                   style={[styles.input, styles.textArea, isAr && styles.inputRtl]}
                   placeholder={i18n.t("reasonPlaceholder")}
+                  placeholderTextColor={colors.muted}
+                  value={reason}
+                  onChangeText={setReason}
+                  multiline
+                  numberOfLines={3}
+                  textAlignVertical="top"
+                />
+              </FieldRow>
+            </>
+          ) : type === "cancel_leave" ? (
+            <>
+              <Text style={[styles.cancelLeaveIntro, isAr && styles.textRtl]}>{i18n.t("cancelLeaveIntro")}</Text>
+              <RequestSelectField
+                label={i18n.t("cancelLeaveSelectLabel")}
+                value={cancelLeaveTarget}
+                options={cancelLeaveOptions.map((l) => ({
+                  value: l.leaveApplication,
+                  label: `${l.leaveApplication} · ${l.fromDate} → ${l.toDate}${
+                    l.totalLeaveDays ? ` · ${l.totalLeaveDays} ${i18n.t("daysUnit")}` : ""
+                  }`,
+                }))}
+                onValueChange={setCancelLeaveTarget}
+                placeholder={
+                  cancelLeaveLoading
+                    ? i18n.t("leaveTypesLoading")
+                    : cancelLeaveOptions.length === 0
+                    ? i18n.t("cancelLeaveEmpty")
+                    : i18n.t("tapToSelect")
+                }
+                isAr={isAr}
+              />
+              {!cancelLeaveLoading && cancelLeaveLoaded && cancelLeaveOptions.length === 0 ? (
+                <View style={styles.inlineNotice}>
+                  <Text style={[styles.inlineNoticeText, isAr && styles.textRtl]}>{i18n.t("cancelLeaveEmpty")}</Text>
+                </View>
+              ) : null}
+              <FieldRow label={i18n.t("reason")} isAr={isAr} iconName="create-outline">
+                <TextInput
+                  style={[styles.input, styles.textArea, isAr && styles.inputRtl]}
+                  placeholder={i18n.t("cancelLeaveReasonPh")}
                   placeholderTextColor={colors.muted}
                   value={reason}
                   onChangeText={setReason}
@@ -943,6 +1029,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     marginTop: -2,
   },
+  cancelLeaveIntro: { fontSize: 13, color: colors.textSecondary, lineHeight: 20, marginBottom: 12 },
   inlineNoticeText: {
     fontSize: 12,
     color: colors.textSecondary,

@@ -59,7 +59,6 @@ export function RequestDetailScreen() {
 
   const [item, setItem] = useState<EmployeeRequest | null>(null);
   const [loading, setLoading] = useState(true);
-  const [cancelling, setCancelling] = useState(false);
   const [policy, setPolicy] = useState<AttachmentPolicy | null>(null);
   const [attachments, setAttachments] = useState<RequestAttachment[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -133,32 +132,10 @@ export function RequestDetailScreen() {
     void load();
   }, [load]);
 
-  const onCancel = () => {
-    if (!item) return;
-    Alert.alert(i18n.t("cancelRequestConfirmTitle"), i18n.t("cancelRequestConfirmBody"), [
-      { text: i18n.t("cancelRequestConfirmNo"), style: "cancel" },
-      {
-        text: i18n.t("cancelRequestConfirmYes"),
-        style: "destructive",
-        onPress: () => {
-          setCancelling(true);
-          requestService
-            .cancelRequest(item.id, item.type)
-            .then(() => {
-              hapticSuccess();
-              navigation.goBack();
-            })
-            .catch(() => {
-              hapticError();
-              Alert.alert(i18n.t("cancelRequestError"));
-            })
-            .finally(() => setCancelling(false));
-        },
-      },
-    ]);
-  };
-
-  const canCancel = item?.status === "pending" && (item.type === "leave" || item.type === "permission");
+  // The direct "cancel request" button was removed in favour of the approval-gated
+  // leave-cancellation flow. `canOwnerEdit` still gates owner-only actions (e.g.
+  // removing an attachment while the request is still pending).
+  const canOwnerEdit = item?.status === "pending" && (item.type === "leave" || item.type === "permission");
 
   return (
     <DetailShell
@@ -252,7 +229,7 @@ export function RequestDetailScreen() {
                       {a.file_name}
                     </Text>
                     <Text style={styles.attachSize}>{`${Math.max(1, Math.round(a.size_bytes / 1024))}KB`}</Text>
-                    {canCancel ? (
+                    {canOwnerEdit ? (
                       <Pressable accessibilityRole="button" hitSlop={8} onPress={() => onRemoveAttachment(a.id)} style={({ pressed }) => pressed && styles.pressed}>
                         <Ionicons name="trash-outline" size={17} color={colors.danger} />
                       </Pressable>
@@ -264,20 +241,6 @@ export function RequestDetailScreen() {
           ) : null}
 
           <Text style={[styles.note, { textAlign: align }]}>{i18n.t("requestDetailApprovalNote")}</Text>
-
-          {canCancel ? (
-            <Pressable
-              disabled={cancelling}
-              onPress={onCancel}
-              style={({ pressed }) => [styles.cancelBtn, pressed && styles.pressed, cancelling && styles.disabled]}
-            >
-              {cancelling ? (
-                <ActivityIndicator size="small" color={colors.danger} />
-              ) : (
-                <Text style={styles.cancelText}>{i18n.t("cancelRequest")}</Text>
-              )}
-            </Pressable>
-          ) : null}
         </>
       )}
       <AdatAlert config={alertConfig} onClose={() => setAlertConfig(null)} />

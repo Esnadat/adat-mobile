@@ -11,6 +11,8 @@ import type { RootStackParamList } from "../types/navigation";
 import { i18n } from "../i18n";
 import { useAppLocale } from "../i18n/LocaleContext";
 import { requestService } from "../services/requestService";
+import { leaveCancellationService, type LeaveCancellationRequest } from "../services/leaveCancellationService";
+import { LeaveCancellationCard } from "../components/requests/LeaveCancellationCard";
 import { EmployeeRequest, RequestStatus, RequestType } from "../types/api";
 import { colors } from "../theme/colors";
 import { floatingTabBarBottomInset } from "../theme/shadows";
@@ -177,21 +179,7 @@ function filterLabel(filter: RequestsFilter): string {
  * (POST /api/requests/:id/cancel) covers pending Leave Applications and
  * Permission Requests only.
  */
-function canCancelRequest(item: EmployeeRequest): boolean {
-  return item.status === "pending" && (item.type === "leave" || item.type === "permission");
-}
-
-function RequestCard({
-  item,
-  isAr,
-  onCancel,
-  busy,
-}: {
-  item: EmployeeRequest;
-  isAr: boolean;
-  onCancel: (item: EmployeeRequest) => void;
-  busy: boolean;
-}) {
+function RequestCard({ item, isAr }: { item: EmployeeRequest; isAr: boolean }) {
   const textAlign = isAr ? "right" : "left";
   const dateLabel = buildDateLabel(item, isAr ? "ar" : "en");
   const accentColor = statusAccentColor(item.status);
@@ -232,22 +220,6 @@ function RequestCard({
       {item.id ? (
         <Text style={[styles.cardId, { textAlign }]}>{`${i18n.t("requestId")}  ${item.id}`}</Text>
       ) : null}
-      {canCancelRequest(item) ? (
-        <View style={[styles.cardActions, isAr && styles.rowReverse]}>
-          <Pressable
-            accessibilityRole="button"
-            disabled={busy}
-            onPress={() => onCancel(item)}
-            style={({ pressed }) => [styles.cancelBtn, pressed && styles.cancelBtnPressed, busy && styles.cancelBtnDisabled]}
-          >
-            {busy ? (
-              <ActivityIndicator size="small" color={colors.danger} />
-            ) : (
-              <Text style={styles.cancelBtnText}>{i18n.t("cancelRequest")}</Text>
-            )}
-          </Pressable>
-        </View>
-      ) : null}
     </PremiumCard>
     </Pressable>
   );
@@ -275,22 +247,24 @@ export function MyRequestsScreen({ focused = true }: { focused?: boolean }) {
   const { locale } = useAppLocale();
   const isAr = locale === "ar";
   const [requests, setRequests] = useState<EmployeeRequest[]>([]);
+  const [cancelReqs, setCancelReqs] = useState<LeaveCancellationRequest[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<RequestsFilter>("all");
-  const [cancellingId, setCancellingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [requestsRes, supportRes] = await Promise.allSettled([
+      const [requestsRes, supportRes, cancelRes] = await Promise.allSettled([
         requestService.getMyRequests(),
         requestService.getMySupportTickets(),
+        leaveCancellationService.myList(),
       ]);
 
       const mainRequests = requestsRes.status === "fulfilled" && Array.isArray(requestsRes.value) ? requestsRes.value : [];
       const supportTickets = supportRes.status === "fulfilled" && Array.isArray(supportRes.value) ? supportRes.value : [];
+      setCancelReqs(cancelRes.status === "fulfilled" && Array.isArray(cancelRes.value) ? cancelRes.value : []);
 
       if (requestsRes.status === "rejected") throw requestsRes.reason;
 
@@ -306,32 +280,6 @@ export function MyRequestsScreen({ focused = true }: { focused?: boolean }) {
   useEffect(() => {
     if (focused) void load();
   }, [focused, load]);
-
-  const handleCancel = useCallback(
-    (item: EmployeeRequest) => {
-      Alert.alert(i18n.t("cancelRequestConfirmTitle"), i18n.t("cancelRequestConfirmBody"), [
-        { text: i18n.t("cancelRequestConfirmNo"), style: "cancel" },
-        {
-          text: i18n.t("cancelRequestConfirmYes"),
-          style: "destructive",
-          onPress: () => {
-            setCancellingId(item.id);
-            requestService
-              .cancelRequest(item.id, item.type)
-              .then(() => {
-                Alert.alert(i18n.t("cancelRequestSuccess"));
-                return load();
-              })
-              .catch(() => {
-                Alert.alert(i18n.t("cancelRequestError"));
-              })
-              .finally(() => setCancellingId(null));
-          },
-        },
-      ]);
-    },
-    [load]
-  );
 
   const filteredRequests = useMemo(() => {
     if (activeFilter === "all") return requests;
@@ -375,9 +323,19 @@ export function MyRequestsScreen({ focused = true }: { focused?: boolean }) {
         refreshControl={
           <RefreshControl refreshing={loading} onRefresh={() => void load()} tintColor={colors.primary} colors={[colors.primary]} />
         }
-        renderItem={({ item }) => (
-          <RequestCard item={item} isAr={isAr} onCancel={handleCancel} busy={cancellingId === item.id} />
-        )}
+        renderItem={({ item }) => <RequestCard item={item} isAr={isAr} />}
+        ListHeaderComponent={
+          activeFilter === "all" && cancelReqs.length > 0 ? (
+            <View style={styles.cancelSection}>
+              <Text style={[styles.cancelSectionTitle, isAr && styles.rowReverse, { textAlign: isAr ? "right" : "left" }]}>
+                {i18n.t("cancelLeaveTitle")}
+              </Text>
+              {cancelReqs.map((c) => (
+                <LeaveCancellationCard key={c.id} item={c} isAr={isAr} />
+              ))}
+            </View>
+          ) : null
+        }
         ListEmptyComponent={loading ? <SkeletonList count={4} /> : <EmptyState filtered={activeFilter !== "all"} />}
         showsVerticalScrollIndicator={false}
       />
@@ -426,6 +384,8 @@ const styles = StyleSheet.create({
     paddingBottom: floatingTabBarBottomInset + 10,
     flexGrow: 1,
   },
+  cancelSection: { marginBottom: 6 },
+  cancelSectionTitle: { fontSize: 13, fontWeight: "800", color: colors.textSecondary, marginBottom: 8 },
   card: {
     marginBottom: 14,
     paddingVertical: 16,
