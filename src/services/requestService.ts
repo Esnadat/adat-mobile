@@ -127,6 +127,9 @@ function normalizeRequestRow(raw: RawRow): EmployeeRequest | null {
   const reason = str(raw.reason);
   const createdAt = str(raw.created_at ?? raw.creation ?? raw.modified ?? raw.created);
 
+  const approver = str(raw.approver ?? raw.leave_approver) || undefined;
+  const modifiedAt = str(raw.modified_at ?? raw.modified) || undefined;
+
   if (mapped === "leave") {
     const fromDate = str(raw.date) || undefined;
     const toDate = str(raw.to_date ?? raw.end_date ?? raw.date) || undefined;
@@ -138,6 +141,8 @@ function normalizeRequestRow(raw: RawRow): EmployeeRequest | null {
       createdAt,
       fromDate,
       toDate,
+      approver,
+      modifiedAt,
     };
   }
 
@@ -151,6 +156,8 @@ function normalizeRequestRow(raw: RawRow): EmployeeRequest | null {
       permissionDate: str(raw.date) || undefined,
       startTime: str(raw.start_time) || undefined,
       endTime: str(raw.end_time) || undefined,
+      approver,
+      modifiedAt,
     };
   }
 

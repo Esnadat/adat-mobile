@@ -8,6 +8,7 @@ import { i18n } from "../i18n";
 import { requestService } from "../services/requestService";
 import { attachmentService, AttachmentPolicy, RequestAttachment } from "../services/attachmentService";
 import { AdatAlert, AdatAlertConfig } from "../components/ui/AdatAlert";
+import { RequestTimeline } from "../components/requests/RequestTimeline";
 import { Ionicons } from "../components/ui/NavIcons";
 import { EmployeeRequest, RequestStatus, RequestType } from "../types/api";
 import { RootStackParamList } from "../types/navigation";
@@ -221,6 +222,12 @@ export function RequestDetailScreen() {
 
             <Row label={i18n.t("requestId")} value={item.id} isAr={isAr} />
           </View>
+
+          {item.type === "leave" || item.type === "permission" ? (
+            <View style={styles.card}>
+              <RequestTimeline item={item} isAr={isAr} />
+            </View>
+          ) : null}
 
           {attachKind && policy && policy.mode !== "hidden" ? (
             <View style={styles.card}>

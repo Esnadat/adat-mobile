@@ -84,6 +84,10 @@ export interface EmployeeRequest extends CreateRequestPayload {
   id: string;
   status: RequestStatus;
   createdAt: string;
+  /** Approver / direct-manager identity (leave_approver or approver), when available. */
+  approver?: string;
+  /** Last-modified timestamp — used as the decision date once status is final. */
+  modifiedAt?: string;
 }
 
 export interface EstablishmentAnnouncement {

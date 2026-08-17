@@ -4,6 +4,7 @@ import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleShee
 import * as Device from "expo-device";
 import { LargeButton } from "../components/LargeButton";
 import { RequestSelectField, type RequestSelectOption } from "../components/requests/RequestSelectField";
+import { RequestAttachmentsField, type StagedFile } from "../components/requests/RequestAttachmentsField";
 import { Ionicons } from "../components/ui/NavIcons";
 import { PremiumCard } from "../components/ui/PremiumCard";
 import { SectionIcon } from "../components/ui/SectionIcon";
@@ -12,6 +13,7 @@ import { i18n } from "../i18n";
 import { getApiErrorMessage } from "../services/http";
 import { requestService } from "../services/requestService";
 import { leaveCancellationService, type EligibleLeave } from "../services/leaveCancellationService";
+import { attachmentService, type AttachmentPolicy } from "../services/attachmentService";
 import { newIdempotencyKey } from "../utils/idempotency";
 import { colors } from "../theme/colors";
 import { floatingTabBarBottomInset, shadowCard } from "../theme/shadows";
@@ -101,6 +103,16 @@ export function RequestsScreen({ onViewMyRequests }: RequestsScreenProps = {}) {
   const [loading, setLoading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submittedName, setSubmittedName] = useState<string | null>(null);
+  const [submitNotice, setSubmitNotice] = useState<string | null>(null);
+
+  // In-form attachments: staged locally, uploaded to the new request right after it
+  // is created (the upload endpoint needs an existing request id). Policy per kind.
+  const [attachPolicies, setAttachPolicies] = useState<Record<string, AttachmentPolicy | null>>({});
+  const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([]);
+  const [uploadingAttachments, setUploadingAttachments] = useState(false);
+  const attachKind = type === "leave" ? "leave" : type === "permission" ? "permission" : null;
+  const attachPolicy = attachKind ? attachPolicies[attachKind] ?? null : null;
+  const attachEnabled = Boolean(attachPolicy && attachPolicy.mode !== "hidden");
   // Stable idempotency key for the current submission attempt: generated on first
   // submit, reused across retries (so a network-lost retry is deduped by the BFF),
   // cleared on success and on form reset so a new submission gets a fresh key.
@@ -113,6 +125,7 @@ export function RequestsScreen({ onViewMyRequests }: RequestsScreenProps = {}) {
     if (nextType === type) return;
     setType(nextType);
     setSubmitError(null);
+    setStagedFiles([]);
 
     if (nextType !== "leave") {
       setLeaveType("");
@@ -195,6 +208,8 @@ export function RequestsScreen({ onViewMyRequests }: RequestsScreenProps = {}) {
     setCancelLeaveTarget("");
     setSubmitError(null);
     setSubmittedName(null);
+    setSubmitNotice(null);
+    setStagedFiles([]);
     setFlowTab("new");
     idempotencyKeyRef.current = null;
   };
@@ -242,6 +257,20 @@ export function RequestsScreen({ onViewMyRequests }: RequestsScreenProps = {}) {
     void loadEligibleLeaves();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flowTab, type]);
+
+  // Load the attachment policy for the current request kind (cached per kind).
+  useEffect(() => {
+    if (flowTab !== "new" || !attachKind) return;
+    if (attachKind in attachPolicies) return;
+    let cancelled = false;
+    void (async () => {
+      const policy = await attachmentService.getPolicy(attachKind);
+      if (!cancelled) setAttachPolicies((prev) => ({ ...prev, [attachKind]: policy }));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [flowTab, attachKind, attachPolicies]);
 
   useEffect(() => {
     if (flowTab !== "new" || type !== "leave") return;
@@ -308,6 +337,30 @@ export function RequestsScreen({ onViewMyRequests }: RequestsScreenProps = {}) {
     setIosPicker(null);
   };
 
+  /**
+   * Uploads staged attachments to a request that was just created. The request
+   * already exists at this point, so a failed attachment never blocks submission —
+   * we surface a non-blocking notice and let the user retry from request details.
+   */
+  const uploadStagedAttachments = async (kind: "leave" | "permission", requestId: string) => {
+    if (stagedFiles.length === 0) return;
+    if (!requestId) {
+      setSubmitNotice(i18n.t("attachSomeFailed"));
+      return;
+    }
+    setUploadingAttachments(true);
+    let failed = 0;
+    for (const file of stagedFiles) {
+      try {
+        await attachmentService.upload(kind, requestId, file);
+      } catch {
+        failed += 1;
+      }
+    }
+    setUploadingAttachments(false);
+    if (failed > 0) setSubmitNotice(i18n.t("attachSomeFailed"));
+  };
+
   const submit = async () => {
     if (loading) return;
     setSubmitError(null);
@@ -350,6 +403,7 @@ export function RequestsScreen({ onViewMyRequests }: RequestsScreenProps = {}) {
     }
 
     setLoading(true);
+    setSubmitNotice(null);
     const idempotencyKey =
       idempotencyKeyRef.current ?? (idempotencyKeyRef.current = newIdempotencyKey());
     try {
@@ -365,9 +419,11 @@ export function RequestsScreen({ onViewMyRequests }: RequestsScreenProps = {}) {
           { idempotencyKey }
         );
         const resData = res?.data as { data?: { name?: string } } | undefined;
-        setSubmittedName(resData?.data?.name ?? "");
+        const createdId = resData?.data?.name ?? "";
+        await uploadStagedAttachments("leave", createdId);
+        setSubmittedName(createdId);
       } else if (type === "permission" && permissionDate) {
-        await requestService.createRequest(
+        const res = await requestService.createRequest(
           {
             type: "permission",
             reason: reason.trim(),
@@ -377,7 +433,10 @@ export function RequestsScreen({ onViewMyRequests }: RequestsScreenProps = {}) {
           },
           { idempotencyKey }
         );
-        setSubmittedName("");
+        const resData = res?.data as { data?: { name?: string } } | undefined;
+        const createdId = resData?.data?.name ?? "";
+        await uploadStagedAttachments("permission", createdId);
+        setSubmittedName(createdId);
       } else if (type === "support") {
         const res = await requestService.createSupportTicket(
           {
@@ -458,6 +517,7 @@ export function RequestsScreen({ onViewMyRequests }: RequestsScreenProps = {}) {
           </View>
           <Text style={styles.successTitle}>{i18n.t("requestSubmitted")}</Text>
           <Text style={styles.successHint}>{type === "support" ? i18n.t("supportSubmitSuccess") : i18n.t("requestFlowHint")}</Text>
+          {submitNotice ? <Text style={styles.successNotice}>{submitNotice}</Text> : null}
           {submittedName ? (
             <View style={styles.idBadge}>
               <Text style={styles.idLabel}>{i18n.t("requestId")}</Text>
@@ -601,6 +661,15 @@ export function RequestsScreen({ onViewMyRequests }: RequestsScreenProps = {}) {
                   textAlignVertical="top"
                 />
               </FieldRow>
+              {attachEnabled && attachPolicy ? (
+                <RequestAttachmentsField
+                  policy={attachPolicy}
+                  files={stagedFiles}
+                  onChange={setStagedFiles}
+                  isAr={isAr}
+                  uploading={uploadingAttachments}
+                />
+              ) : null}
             </>
           ) : type === "permission" ? (
             <>
@@ -651,6 +720,15 @@ export function RequestsScreen({ onViewMyRequests }: RequestsScreenProps = {}) {
                   textAlignVertical="top"
                 />
               </FieldRow>
+              {attachEnabled && attachPolicy ? (
+                <RequestAttachmentsField
+                  policy={attachPolicy}
+                  files={stagedFiles}
+                  onChange={setStagedFiles}
+                  isAr={isAr}
+                  uploading={uploadingAttachments}
+                />
+              ) : null}
             </>
           ) : type === "cancel_leave" ? (
             <>
@@ -1144,6 +1222,7 @@ const styles = StyleSheet.create({
   },
   successTitle: { fontSize: 22, fontWeight: "800", color: colors.ink, marginBottom: 8, textAlign: "center" },
   successHint: { fontSize: 13, color: colors.textSecondary, marginBottom: 14, textAlign: "center" },
+  successNotice: { fontSize: 12, color: colors.danger, marginBottom: 14, textAlign: "center", lineHeight: 18 },
   idBadge: {
     width: "100%",
     backgroundColor: colors.background,
