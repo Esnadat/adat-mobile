@@ -42,6 +42,22 @@ export interface TeamAttendanceEntry {
   checkOut?: string | null;
 }
 
+export interface TeamMemberCheckin {
+  time: string | null;
+  log_type: string | null;
+  shift: string | null;
+}
+export interface TeamMemberShift {
+  shift_type: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  status: string | null;
+}
+export interface TeamMemberAttendance {
+  checkins: TeamMemberCheckin[];
+  shifts: TeamMemberShift[];
+}
+
 function str(v: unknown): string {
   return v == null ? "" : String(v).trim();
 }
@@ -79,6 +95,30 @@ export const teamService = {
     const res: AxiosResponse<unknown> = await http.get(`/api/manager/team-member/${encodeURIComponent(employee)}`);
     const body = res.data as { data?: TeamMemberDetail } | undefined;
     return body?.data ?? null;
+  },
+
+  /** Recent check-ins + shift assignments for a direct report (manager-scoped). */
+  async getTeamMemberAttendance(employee: string): Promise<TeamMemberAttendance> {
+    try {
+      const res: AxiosResponse<unknown> = await http.get(
+        `/api/manager/team-member/${encodeURIComponent(employee)}/attendance`
+      );
+      const d = (res.data as { data?: { checkins?: unknown; shifts?: unknown } } | undefined)?.data;
+      const checkins = asArray(d?.checkins).map((r) => ({
+        time: str(r.time) || null,
+        log_type: str(r.log_type) || null,
+        shift: str(r.shift) || null,
+      }));
+      const shifts = asArray(d?.shifts).map((r) => ({
+        shift_type: str(r.shift_type) || null,
+        start_date: str(r.start_date) || null,
+        end_date: str(r.end_date) || null,
+        status: str(r.status) || null,
+      }));
+      return { checkins, shifts };
+    } catch {
+      return { checkins: [], shifts: [] };
+    }
   },
 
   /** Today's attendance rows for the team, keyed loosely by employee id/number. */

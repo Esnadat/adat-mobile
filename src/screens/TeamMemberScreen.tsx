@@ -7,7 +7,7 @@ import { Ionicons } from "../components/ui/NavIcons";
 import { StatusPill } from "../components/ui/StatusPill";
 import { useAppLocale } from "../i18n/LocaleContext";
 import { i18n } from "../i18n";
-import { teamService, TeamMemberDetail } from "../services/teamService";
+import { teamService, TeamMemberDetail, TeamMemberAttendance } from "../services/teamService";
 import { RootStackParamList } from "../types/navigation";
 import { colors } from "../theme/colors";
 import { radius, spacing } from "../theme/spacing";
@@ -32,6 +32,7 @@ export function TeamMemberScreen() {
   const align = isAr ? "right" : "left";
 
   const [detail, setDetail] = useState<TeamMemberDetail | null>(null);
+  const [attendance, setAttendance] = useState<TeamMemberAttendance>({ checkins: [], shifts: [] });
   const [loading, setLoading] = useState(true);
   const [forbidden, setForbidden] = useState(false);
 
@@ -39,8 +40,12 @@ export function TeamMemberScreen() {
     setLoading(true);
     setForbidden(false);
     try {
-      const d = await teamService.getTeamMember(employee);
+      const [d, att] = await Promise.all([
+        teamService.getTeamMember(employee),
+        teamService.getTeamMemberAttendance(employee),
+      ]);
       setDetail(d);
+      setAttendance(att);
     } catch (e) {
       const status = (e as { response?: { status?: number } })?.response?.status;
       if (status === 403) setForbidden(true);
@@ -137,6 +142,46 @@ export function TeamMemberScreen() {
             </View>
           )}
 
+          <Text style={[styles.sectionTitle, { textAlign: align, marginTop: spacing.lg }]}>{i18n.t("teamMemberShifts")}</Text>
+          {attendance.shifts.length === 0 ? (
+            <View style={styles.emptyBox}>
+              <Text style={styles.muted}>{i18n.t("teamMemberNoShifts")}</Text>
+            </View>
+          ) : (
+            <View style={styles.card}>
+              {attendance.shifts.map((s, i) => (
+                <View key={`shift-${i}`} style={[styles.pendingRow, isAr && styles.rowReverse, i > 0 && styles.pendingDivider]}>
+                  <Text style={[styles.shiftName, { textAlign: align }]} numberOfLines={1}>{s.shift_type || "—"}</Text>
+                  <Text style={[styles.pendingMeta, { textAlign: isAr ? "left" : "right" }]} numberOfLines={1}>
+                    {`${formatYyyyMmDdForDisplay(s.start_date ?? undefined) ?? ""}${s.end_date ? ` → ${formatYyyyMmDdForDisplay(s.end_date ?? undefined) ?? ""}` : ""}`}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
+
+          <Text style={[styles.sectionTitle, { textAlign: align, marginTop: spacing.lg }]}>{i18n.t("teamMemberAttendanceLog")}</Text>
+          {attendance.checkins.length === 0 ? (
+            <View style={styles.emptyBox}>
+              <Text style={styles.muted}>{i18n.t("teamMemberNoAttendance")}</Text>
+            </View>
+          ) : (
+            <View style={styles.card}>
+              {attendance.checkins.slice(0, 30).map((c, i) => (
+                <View key={`chk-${i}`} style={[styles.pendingRow, isAr && styles.rowReverse, i > 0 && styles.pendingDivider]}>
+                  <StatusPill
+                    label={c.log_type === "IN" ? i18n.t("checkInLabel") : c.log_type === "OUT" ? i18n.t("checkOutLabel") : c.log_type || "—"}
+                    tone={c.log_type === "IN" ? "success" : "neutral"}
+                    numberOfLines={1}
+                  />
+                  <Text style={[styles.pendingMeta, { textAlign: isAr ? "left" : "right" }]} numberOfLines={1}>
+                    {c.time ? `${formatYyyyMmDdForDisplay(String(c.time).split(/[ T]/)[0]) ?? ""} · ${String(c.time).split(/[ T]/)[1]?.slice(0, 5) ?? ""}` : "—"}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
+
           <Text style={[styles.note, { textAlign: align }]}>{i18n.t("teamMemberNote")}</Text>
         </>
       )}
@@ -186,6 +231,7 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.7 },
   pendingHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: spacing.md },
   sectionTitle: { fontSize: 14, fontWeight: "800", color: colors.ink, letterSpacing: -0.1 },
+  shiftName: { flex: 1, fontSize: 14, fontWeight: "700", color: colors.ink },
   countPill: { backgroundColor: colors.warningLight, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 3 },
   countText: { fontSize: 12.5, fontWeight: "800", color: colors.warning, fontVariant: ["tabular-nums"] },
   pendingRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: spacing.md, paddingVertical: 11 },
