@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import QRCode from "react-native-qrcode-svg";
 import { EmployeeAvatar } from "../components/ui/EmployeeAvatar";
 import { PremiumCard } from "../components/ui/PremiumCard";
@@ -10,9 +10,6 @@ import { colors } from "../theme/colors";
 import { floatingTabBarBottomInset } from "../theme/shadows";
 import { formatMobileDate, formatMobileTimeFromDate } from "../utils/mobileDateFormat";
 import { formatYyyyMmDdForDisplay } from "../utils/mobileDateFormat";
-import { ENV } from "../config/env";
-
-const API_BASE = ENV.apiBaseUrl.replace(/\/+$/, "");
 
 const ESNADAT_NAME = "Esnadat";
 const ESNADAT_CODE = "1001";
@@ -126,8 +123,6 @@ function buildVCard(fields: {
 export function BusinessCardScreen() {
   const { user } = useAuth();
   const { locale } = useAppLocale();
-  const [logoLoadFailed, setLogoLoadFailed] = useState(false);
-  const [companyLogoFailed, setCompanyLogoFailed] = useState(false);
   const [now, setNow] = useState(() => new Date());
   const isAr = locale === "ar";
   const align = isAr ? "right" : "left";
@@ -168,16 +163,17 @@ export function BusinessCardScreen() {
 
   const compactInfoRows = useMemo(
     () =>
+      // Contact first, then identity, then dates — the natural read order on a card.
       [
-        { icon: "mail-outline" as const, value: workEmail },
         { icon: "call-outline" as const, value: mobile },
+        { icon: "mail-outline" as const, value: workEmail },
+        { icon: "at-outline" as const, value: showPersonalEmail ? personalEmail : "" },
         { icon: "person-outline" as const, value: employeeId ? `ID ${employeeId}` : "" },
         { icon: "business-outline" as const, value: company.code ? `Code ${company.code}` : "" },
         {
           icon: "calendar-outline" as const,
           value: joining ? `${isAr ? "التعيين" : "Joined"} ${formatYyyyMmDdForDisplay(joining) ?? ""}` : "",
         },
-        { icon: "at-outline" as const, value: showPersonalEmail ? personalEmail : "" },
       ].filter((row) => Boolean(row.value)),
     [workEmail, mobile, employeeId, company.code, showPersonalEmail, personalEmail, joining, isAr]
   );
@@ -194,25 +190,8 @@ export function BusinessCardScreen() {
         <View style={styles.cardTopAccent} />
         <View style={[styles.topRow, isAr && styles.rowReverse]}>
           <View style={styles.brandWrap}>
-            {!companyLogoFailed ? (
-              // Employee's company logo (session-scoped BFF proxy). Falls back cleanly
-              // to the Esnadat wordmark / company name if none is uploaded (404 → onError).
-              <Image
-                source={{ uri: `${API_BASE}/api/company/logo` }}
-                style={styles.brandWordmark}
-                resizeMode="contain"
-                onError={() => setCompanyLogoFailed(true)}
-              />
-            ) : company.isEsnadat && !logoLoadFailed ? (
-              <Image
-                source={require("../../assets/branding/esnadat-wordmark.png")}
-                style={styles.brandWordmark}
-                resizeMode="contain"
-                onError={() => setLogoLoadFailed(true)}
-              />
-            ) : company.display ? (
-              <Text style={styles.brandFallback}>{company.display}</Text>
-            ) : null}
+            {/* Company name as text (no logo image) — one identity source, no branding asset. */}
+            {company.display ? <Text style={styles.brandName}>{company.display}</Text> : null}
           </View>
           <View style={styles.avatarWrap}>
             <EmployeeAvatar photoUrl={photoUrl} initialSource={avatarSource} size={100} />
@@ -245,7 +224,6 @@ export function BusinessCardScreen() {
             {name ? <Text style={[styles.enName, { textAlign: align }]}>{name}</Text> : null}
             {designation ? <Text style={[styles.enRole, { textAlign: align }]}>{designation}</Text> : null}
             {department ? <Text style={[styles.enSub, { textAlign: align }]}>{department}</Text> : null}
-            {company.display ? <Text style={[styles.enSub, styles.enCompany, { textAlign: align }]}>{company.display}</Text> : null}
           </View>
         </View>
         <View style={styles.infoArea}>
@@ -304,8 +282,7 @@ const styles = StyleSheet.create({
   topRow: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 14 },
   rowReverse: { flexDirection: "row-reverse" },
   brandWrap: { minHeight: 34, justifyContent: "center" },
-  brandWordmark: { width: 138, height: 26, opacity: 0.92 },
-  brandFallback: { fontSize: 18, fontWeight: "900", color: colors.ink, letterSpacing: -0.2 },
+  brandName: { fontSize: 18, fontWeight: "900", color: colors.ink, letterSpacing: -0.2 },
   avatarWrap: {
     borderRadius: 56,
     borderWidth: 2,
@@ -378,7 +355,6 @@ const styles = StyleSheet.create({
   },
   enRole: { fontSize: 13, fontWeight: "700", color: colors.textSecondary, lineHeight: 18 },
   enSub: { fontSize: 12, fontWeight: "600", color: colors.textSecondary, lineHeight: 17 },
-  enCompany: { color: colors.ink, fontWeight: "800", marginTop: 2 },
   infoArea: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 14 },
   infoChip: {
     flexDirection: "row",
