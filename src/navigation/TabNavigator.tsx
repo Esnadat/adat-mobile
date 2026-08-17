@@ -20,6 +20,7 @@ import { TasksScreen } from "../screens/TasksScreen";
 import { MyBalancesScreen } from "../screens/MyBalancesScreen";
 import { MyTeamScreen } from "../screens/MyTeamScreen";
 import { MonthlyStatementScreen } from "../screens/MonthlyStatementScreen";
+import { AppDrawer, type DrawerDestination } from "../components/AppDrawer";
 import { useAppLocale } from "../i18n/LocaleContext";
 import { i18n } from "../i18n";
 import { colors } from "../theme/colors";
@@ -83,8 +84,16 @@ export function TabNavigator() {
   const route = useRoute<RouteProp<RootStackParamList, "Main">>();
   const [activeTab, setActiveTab] = useState<TabId>("attendance");
   const [moreStackView, setMoreStackView] = useState<MoreStackView | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const insets = useSafeAreaInsets();
   const isAr = locale === "ar";
+
+  const onDrawerNavigate = (dest: DrawerDestination) => {
+    if (dest === "profile") setMoreStackView("profile");
+    else if (dest === "businessCard") setMoreStackView("businessCard");
+    else if (dest === "settings") setMoreStackView("settings");
+    else if (dest === "support") goTab("requests"); // support lives in the Requests hub
+  };
 
   // Deep-link into a specific tab (e.g. from a notification).
   const requestedTab = route.params?.tab;
@@ -260,6 +269,19 @@ export function TabNavigator() {
           </View>
         ) : null}
       </View>
+
+      {!moreStackView ? (
+        <TouchableOpacity
+          style={[styles.hamburger, { top: insets.top + 8 }, isAr ? { end: 14 } : { start: 14 }]}
+          onPress={() => setDrawerOpen(true)}
+          accessibilityRole="button"
+          accessibilityLabel={i18n.t("moreTitle")}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="menu" size={22} color={colors.ink} />
+        </TouchableOpacity>
+      ) : null}
+      <AppDrawer visible={drawerOpen} onClose={() => setDrawerOpen(false)} onNavigate={onDrawerNavigate} />
     </View>
   );
 }
@@ -268,6 +290,23 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  hamburger: {
+    position: "absolute",
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 20,
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
   },
   bodyColumn: {
     flex: 1,
