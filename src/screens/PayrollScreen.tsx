@@ -1,5 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import * as Print from "expo-print";
+import { Ionicons } from "../components/ui/NavIcons";
+import { buildPayslipHtml } from "../utils/payslipHtml";
 import { MoneyRow } from "../components/ui/MoneyRow";
 import { PremiumCard } from "../components/ui/PremiumCard";
 import { StatusPill } from "../components/ui/StatusPill";
@@ -149,6 +152,22 @@ function PayslipItem({
 export function PayrollScreen() {
   const { locale } = useAppLocale();
   const isAr = locale === "ar";
+  const [printing, setPrinting] = useState(false);
+
+  const printPayslip = useCallback(
+    async (slip: PayrollPayslip) => {
+      if (printing) return;
+      setPrinting(true);
+      try {
+        await Print.printAsync({ html: buildPayslipHtml(slip, isAr) });
+      } catch {
+        Alert.alert(i18n.t("printPayslipError"));
+      } finally {
+        setPrinting(false);
+      }
+    },
+    [isAr, printing]
+  );
   const [profile, setProfile] = useState<PayrollProfile | null>(null);
   const [payslips, setPayslips] = useState<PayrollPayslip[]>([]);
   const [loading, setLoading] = useState(false);
@@ -442,6 +461,15 @@ export function PayrollScreen() {
           {selectedDetail.deductionsRows.map((row) => (
             <MoneyRow key={`sel-d-${row.label}-${row.amount ?? "na"}`} label={labelForLine(row)} amount={money(row.amount, selectedDetail.currency || summaryCurrency)} isAr={isAr} />
           ))}
+          <Pressable
+            accessibilityRole="button"
+            disabled={printing}
+            onPress={() => void printPayslip(selectedDetail)}
+            style={({ pressed }) => [styles.printBtn, isAr && { flexDirection: "row-reverse" }, pressed && { opacity: 0.9 }, printing && { opacity: 0.6 }]}
+          >
+            <Ionicons name="print-outline" size={17} color={colors.primary} />
+            <Text style={styles.printBtnText}>{i18n.t("printPayslip")}</Text>
+          </Pressable>
         </PremiumCard>
       ) : null}
     </ScrollView>
@@ -539,6 +567,18 @@ const styles = StyleSheet.create({
   periodLtr: { writingDirection: "ltr" },
   summaryStatusRow: { marginTop: 8, marginBottom: 2 },
   breakCard: { marginBottom: 18, paddingVertical: 6, paddingBottom: 14 },
+  printBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    marginTop: 14,
+    paddingVertical: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  printBtnText: { fontSize: 14, fontWeight: "800", color: colors.primary },
   cardHead: {
     fontSize: 15,
     fontWeight: "800",
