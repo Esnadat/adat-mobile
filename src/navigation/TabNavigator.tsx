@@ -21,6 +21,7 @@ import { MyBalancesScreen } from "../screens/MyBalancesScreen";
 import { MyTeamScreen } from "../screens/MyTeamScreen";
 import { MonthlyStatementScreen } from "../screens/MonthlyStatementScreen";
 import { AppDrawer, type DrawerDestination } from "../components/AppDrawer";
+import { DrawerContext } from "../context/DrawerContext";
 import { useAppLocale } from "../i18n/LocaleContext";
 import { i18n } from "../i18n";
 import { colors } from "../theme/colors";
@@ -202,7 +203,7 @@ export function TabNavigator() {
               <ProfileScreen />
             </View>
           ) : (
-            <>
+            <DrawerContext.Provider value={{ openDrawer: () => setDrawerOpen(true) }}>
               <View style={[styles.screen, { display: activeTab === "tasks" ? "flex" : "none" }]}>
                 <TasksScreen />
               </View>
@@ -231,7 +232,7 @@ export function TabNavigator() {
                   onOpenStatement={() => setMoreStackView("statement")}
                 />
               </View>
-            </>
+            </DrawerContext.Provider>
           )}
         </View>
 
@@ -270,17 +271,6 @@ export function TabNavigator() {
         ) : null}
       </View>
 
-      {!moreStackView ? (
-        <TouchableOpacity
-          style={[styles.hamburger, { top: insets.top + 8 }, isAr ? { end: 14 } : { start: 14 }]}
-          onPress={() => setDrawerOpen(true)}
-          accessibilityRole="button"
-          accessibilityLabel={i18n.t("moreTitle")}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="menu" size={22} color={colors.ink} />
-        </TouchableOpacity>
-      ) : null}
       <AppDrawer visible={drawerOpen} onClose={() => setDrawerOpen(false)} onNavigate={onDrawerNavigate} />
     </View>
   );
@@ -290,23 +280,6 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: colors.background,
-  },
-  hamburger: {
-    position: "absolute",
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 20,
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
   },
   bodyColumn: {
     flex: 1,

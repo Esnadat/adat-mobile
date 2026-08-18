@@ -1,5 +1,7 @@
 import React from "react";
-import { ScrollView, ScrollViewProps, StyleSheet, Text, View, ViewStyle } from "react-native";
+import { Pressable, ScrollView, ScrollViewProps, StyleSheet, Text, View, ViewStyle } from "react-native";
+import { Ionicons } from "./NavIcons";
+import { useDrawer } from "../../context/DrawerContext";
 import { useAppLocale } from "../../i18n/LocaleContext";
 import { colors } from "../../theme/colors";
 import { floatingTabBarBottomInset } from "../../theme/shadows";
@@ -37,6 +39,7 @@ export function ScreenShell({
   const isAr = locale === "ar";
   const textAlign = isAr ? "right" : "left";
   const compact = headerDensity === "compact";
+  const drawer = useDrawer();
 
   return (
     <View style={styles.root}>
@@ -45,10 +48,24 @@ export function ScreenShell({
           <View style={[styles.headerCard, compact && styles.headerCardCompact]}>
             <View style={styles.headerGlow} />
             <View style={styles.headerGlowDeep} />
-            <Text style={[compact ? styles.titleCompact : styles.title, { textAlign }]}>{title}</Text>
-            {subtitle ? (
-              <Text style={[compact ? styles.subtitleCompact : styles.subtitle, { textAlign }]}>{subtitle}</Text>
-            ) : null}
+            <View style={[styles.titleRow, isAr && styles.titleRowAr]}>
+              {drawer ? (
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={drawer.openDrawer}
+                  hitSlop={10}
+                  style={({ pressed }) => [styles.menuBtn, pressed && { opacity: 0.6 }]}
+                >
+                  <Ionicons name="menu" size={22} color={colors.ink} />
+                </Pressable>
+              ) : null}
+              <View style={styles.titleTextWrap}>
+                <Text style={[compact ? styles.titleCompact : styles.title, { textAlign }]}>{title}</Text>
+                {subtitle ? (
+                  <Text style={[compact ? styles.subtitleCompact : styles.subtitle, { textAlign }]}>{subtitle}</Text>
+                ) : null}
+              </View>
+            </View>
             {headerContent ? (
               <View style={[styles.headerExtra, compact && styles.headerExtraCompact]}>{headerContent}</View>
             ) : null}
@@ -149,6 +166,10 @@ const styles = StyleSheet.create({
     position: "relative",
     zIndex: 1,
   },
+  titleRow: { flexDirection: "row", alignItems: "center", gap: 10, position: "relative", zIndex: 1 },
+  titleRowAr: { flexDirection: "row-reverse" },
+  titleTextWrap: { flex: 1 },
+  menuBtn: { width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center", backgroundColor: colors.surfaceSubtle, borderWidth: 1, borderColor: colors.border },
   headerExtra: { marginTop: 12, position: "relative", zIndex: 1 },
   headerExtraCompact: { marginTop: 9 },
   scroll: {

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import * as Print from "expo-print";
+import * as Sharing from "expo-sharing";
 import { Ionicons } from "../components/ui/NavIcons";
 import { buildPayslipHtml } from "../utils/payslipHtml";
 import { MoneyRow } from "../components/ui/MoneyRow";
@@ -159,7 +160,16 @@ export function PayrollScreen() {
       if (printing) return;
       setPrinting(true);
       try {
-        await Print.printAsync({ html: buildPayslipHtml(slip, isAr) });
+        // Generate a PDF, then open the OS share sheet (Print / Save to Files / AirDrop
+        // on iOS). More reliable than Print.printAsync's direct dialog. Falls back to
+        // the print dialog if sharing is unavailable.
+        const html = buildPayslipHtml(slip, isAr);
+        const { uri } = await Print.printToFileAsync({ html });
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(uri, { mimeType: "application/pdf", UTI: "com.adobe.pdf", dialogTitle: i18n.t("printPayslip") });
+        } else {
+          await Print.printAsync({ uri });
+        }
       } catch {
         Alert.alert(i18n.t("printPayslipError"));
       } finally {

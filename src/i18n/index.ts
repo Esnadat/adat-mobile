@@ -396,7 +396,9 @@ const i18n = new I18n({
     supportSubmitBlocked:
       "Submitting support tickets from the app is not available yet — the server API for this flow is not connected.",
     valSupportSubject: "Subject is required",
+    valSupportSubjectMin: "Subject must be at least 3 characters",
     valSupportDescription: "Description is required",
+    valSupportDescriptionMin: "Description must be at least 5 characters",
     supportCatTech: "Technical issue",
     supportCatHR: "Human resources",
     supportCatPayroll: "Payroll",
@@ -858,7 +860,9 @@ const i18n = new I18n({
     supportSubmitBlocked:
       "إرسال طلبات الدعم من التطبيق غير متاح حاليًا — واجهة الخادم لهذا المسار غير مربوطة بعد.",
     valSupportSubject: "العنوان مطلوب",
+    valSupportSubjectMin: "العنوان يجب أن يكون 3 أحرف على الأقل",
     valSupportDescription: "الوصف مطلوب",
+    valSupportDescriptionMin: "الوصف يجب أن يكون 5 أحرف على الأقل",
     supportCatTech: "مشكلة تقنية",
     supportCatHR: "الموارد البشرية",
     supportCatPayroll: "الرواتب",

@@ -393,9 +393,13 @@ export function RequestsScreen({ onViewMyRequests }: RequestsScreenProps = {}) {
 
     if (type === "support") {
       if (!supportSubject.trim()) return setSubmitError(i18n.t("valSupportSubject"));
+      // Server requires title >= 3 and details >= 5 chars — validate here with a
+      // clear message instead of letting the server return a generic failure.
+      if (supportSubject.trim().length < 3) return setSubmitError(i18n.t("valSupportSubjectMin"));
       if (!supportCategory.trim()) return setSubmitError(i18n.t("supportCategory"));
       if (!supportPriority.trim()) return setSubmitError(i18n.t("supportPriority"));
       if (!supportDescription.trim()) return setSubmitError(i18n.t("valSupportDescription"));
+      if (supportDescription.trim().length < 5) return setSubmitError(i18n.t("valSupportDescriptionMin"));
     }
 
     if (type === "cancel_leave") {
@@ -461,7 +465,8 @@ export function RequestsScreen({ onViewMyRequests }: RequestsScreenProps = {}) {
       idempotencyKeyRef.current = null;
     } catch (error) {
       if (type === "support") {
-        setSubmitError(i18n.t("supportSubmitError"));
+        const serverMsg = getApiErrorMessage(error);
+        setSubmitError(serverMsg && serverMsg !== "Request failed" ? serverMsg : i18n.t("supportSubmitError"));
       } else if (
         type === "leave" &&
         String(getApiErrorMessage(error)).toLowerCase().includes("application period cannot be outside leave allocation period")
